@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Reader PRO - Your Personal PDF Library in the Cloud</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #1a1a1a;
+            overflow-x: hidden;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><rect width="1" height="1" fill="white" opacity="0.1"/></svg>');
+            animation: float 20s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+
+        .hero-content {
+            max-width: 1200px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            color: white;
+        }
+
+        .hero h1 {
+            font-size: clamp(2.5rem, 8vw, 5rem);
+            font-weight: 800;
+            margin-bottom: 24px;
+            text-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            animation: slideDown 0.8s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1.2rem, 3vw, 1.8rem);
+            margin-bottom: 40px;
+            opacity: 0.95;
+            font-weight: 300;
+            animation: slideUp 0.8s ease-out 0.2s backwards;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 0.95;
+                transform: translateY(0);
+            }
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 20px 50px;
+            background: white;
+            color: #667eea;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border-radius: 50px;
+            text-decoration: none;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .cta-button:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+            animation: none;
+        }
+
+        .hero-features {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 60px;
+            flex-wrap: wrap;
+        }
+
+        .hero-feature {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .hero-feature::before {
+            content: '✓';
+            width: 28px;
+            height: 28px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        /* Features Section */
+        .features {
+            padding: 100px 20px;
+            background: #f8f9fa;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #1a1a1a;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            font-size: 1.3rem;
+            color: #6c757d;
+            margin-bottom: 60px;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .features-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 40px;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 5px 30px rgba(0,0,0,0.08);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transform: scaleX(0);
+            transition: transform 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 50px rgba(102,126,234,0.2);
+        }
+
+        .feature-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 20px;
+        }
+
+        .feature-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #1a1a1a;
+        }
+
+        .feature-description {
+            color: #6c757d;
+            line-height: 1.8;
+        }
+
+        /* Benefits Section */
+        .benefits {
+            padding: 100px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .benefits-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 40px;
+        }
+
+        .benefit-item {
+            text-align: center;
+            padding: 30px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s;
+        }
+
+        .benefit-item:hover {
+            background: rgba(255,255,255,0.2);
+            transform: scale(1.05);
+        }
+
+        .benefit-number {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .benefit-text {
+            font-size: 1.1rem;
+            opacity: 0.95;
+        }
+
+        /* How It Works */
+        .how-it-works {
+            padding: 100px 20px;
+            background: white;
+        }
+
+        .steps-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .step {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 50px;
+            align-items: flex-start;
+        }
+
+        .step-number {
+            min-width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .step-content h3 {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+            color: #1a1a1a;
+        }
+
+        .step-content p {
+            color: #6c757d;
+            font-size: 1.1rem;
+            line-height: 1.8;
+        }
+
+        /* Use Cases */
+        .use-cases {
+            padding: 100px 20px;
+            background: #f8f9fa;
+        }
+
+        .use-cases-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+        }
+
+        .use-case {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s;
+        }
+
+        .use-case:hover {
+            transform: translateX(10px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .use-case-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #1a1a1a;
+        }
+
+        .use-case-description {
+            color: #6c757d;
+            line-height: 1.7;
+        }
+
+        /* Pricing Section */
+        .pricing {
+            padding: 100px 20px;
+            background: white;
+        }
+
+        .pricing-card {
+            max-width: 500px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 50px;
+            border-radius: 25px;
+            color: white;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(102,126,234,0.3);
+        }
+
+        .price {
+            font-size: 4rem;
+            font-weight: 700;
+            margin: 20px 0;
+        }
+
+        .price-subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+
+        .pricing-features {
+            text-align: left;
+            margin: 30px 0;
+        }
+
+        .pricing-feature {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .pricing-feature::before {
+            content: '✓';
+            width: 30px;
+            height: 30px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        /* CTA Section */
+        .final-cta {
+            padding: 100px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            text-align: center;
+            color: white;
+        }
+
+        .final-cta h2 {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            margin-bottom: 30px;
+        }
+
+        .final-cta p {
+            font-size: 1.3rem;
+            margin-bottom: 40px;
+            opacity: 0.95;
+        }
+
+        .cta-button-white {
+            display: inline-block;
+            padding: 20px 50px;
+            background: white;
+            color: #667eea;
+            font-size: 1.2rem;
+            font-weight: 600;
+            border-radius: 50px;
+            text-decoration: none;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .cta-button-white:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        /* Footer */
+        footer {
+            background: #1a1a1a;
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .step {
+                flex-direction: column;
+            }
+            
+            .hero-features {
+                flex-direction: column;
+                gap: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Your Personal PDF Library,<br>Anywhere You Go</h1>
+            <p class="hero-subtitle">Read, organize, and never lose track of your important documents again.<br>All your PDFs in one beautiful, powerful workspace.</p>
+            <a href="#get-started" class="cta-button">Start Reading for Free</a>
+            
+            <div class="hero-features">
+                <div class="hero-feature">Unlimited PDFs</div>
+                <div class="hero-feature">Progress Tracking</div>
+                <div class="hero-feature">Works Everywhere</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features">
+        <h2 class="section-title">Everything You Need to Master Your PDFs</h2>
+        <p class="section-subtitle">Stop juggling files across devices. PDF Reader PRO keeps everything organized, accessible, and beautifully simple.</p>
+        
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">📚</div>
+                <h3 class="feature-title">Smart Library Management</h3>
+                <p class="feature-description">Build your personal library by adding PDFs from any URL. Each document is saved with your progress, so you can pick up exactly where you left off—even days or weeks later.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">📍</div>
+                <h3 class="feature-title">Never Lose Your Place</h3>
+                <p class="feature-description">Automatic bookmark tracking remembers your exact page, zoom level, and reading position. Switch between documents freely—your progress is always saved.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <h3 class="feature-title">Table of Contents Navigation</h3>
+                <p class="feature-description">Jump instantly to any chapter or section. The built-in TOC viewer makes navigating long documents effortless, whether it's a 500-page manual or a research paper.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">🔍</div>
+                <h3 class="feature-title">Perfect Zoom Control</h3>
+                <p class="feature-description">Crystal-clear rendering at any zoom level. Your preferred zoom is remembered for each document, ensuring comfortable reading every single time.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3 class="feature-title">Lightning-Fast Performance</h3>
+                <p class="feature-description">Powered by PDF.js, the same technology behind Firefox. Smooth page transitions, instant loading, and responsive controls—even with large files.</p>
+            </div>
+
+            <div class="feature-card">
+                <div class="feature-icon">🎨</div>
+                <h3 class="feature-title">Beautiful Reading Experience</h3>
+                <p class="feature-description">Modern, distraction-free interface with dark mode-friendly viewer. Fullscreen mode available for immersive reading sessions.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section class="benefits">
+        <h2 class="section-title">By the Numbers</h2>
+        <p class="section-subtitle">See what makes PDF Reader PRO the smart choice</p>
+        
+        <div class="benefits-container">
+            <div class="benefit-item">
+                <div class="benefit-number">∞</div>
+                <div class="benefit-text">Unlimited Documents<br>in Your Library</div>
+            </div>
+            <div class="benefit-item">
+                <div class="benefit-number">100%</div>
+                <div class="benefit-text">Progress Tracking<br>Accuracy</div>
+            </div>
+            <div class="benefit-item">
+                <div class="benefit-number">0</div>
+                <div class="benefit-text">Setup Required<br>Start Instantly</div>
+            </div>
+            <div class="benefit-item">
+                <div class="benefit-number">24/7</div>
+                <div class="benefit-text">Access Anywhere<br>Any Device</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="how-it-works">
+        <h2 class="section-title">How It Works</h2>
+        <p class="section-subtitle">Get started in seconds, not minutes</p>
+        
+        <div class="steps-container">
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3>Add Your First PDF</h3>
+                    <p>Click "Add PDF" and paste any PDF URL—from cloud storage, websites, or document repositories. Give it a name and you're done. Your document loads instantly.</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3>Read and Navigate</h3>
+                    <p>Use the clean, intuitive interface to read comfortably. Browse by page numbers, jump through the table of contents, or zoom to your perfect reading size. Every interaction is smooth and instant.</p>
+                </div>
+            </div>
+
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3>Pick Up Where You Left Off</h3>
+                    <p>Close the app whenever you want. When you return, all your documents are waiting—complete with your exact page, zoom level, and position. Your entire library stays perfectly organized.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Use Cases -->
+    <section class="use-cases">
+        <h2 class="section-title">Perfect For Every Need</h2>
+        <p class="section-subtitle">Whether you're learning, working, or researching—we've got you covered</p>
+        
+        <div class="use-cases-grid">
+            <div class="use-case">
+                <h4 class="use-case-title">📖 Students & Researchers</h4>
+                <p class="use-case-description">Manage textbooks, research papers, and study materials. Track progress through dense academic PDFs with chapter navigation and bookmarking.</p>
+            </div>
+
+            <div class="use-case">
+                <h4 class="use-case-title">💼 Professionals</h4>
+                <p class="use-case-description">Keep manuals, reports, and documentation organized. Access critical reference materials instantly, without digging through files.</p>
+            </div>
+
+            <div class="use-case">
+                <h4 class="use-case-title">✍️ Writers & Editors</h4>
+                <p class="use-case-description">Review manuscripts, reference books, and style guides. Compare multiple documents side-by-side across reading sessions.</p>
+            </div>
+
+            <div class="use-case">
+                <h4 class="use-case-title">📚 Avid Readers</h4>
+                <p class="use-case-description">Build your digital library of ebooks, magazines, and documents. Read at your own pace with perfect progress tracking.</p>
+            </div>
+
+            <div class="use-case">
+                <h4 class="use-case-title">🎓 Online Learners</h4>
+                <p class="use-case-description">Organize course materials, lecture notes, and assignments. Never lose your place in lengthy tutorials or guides.</p>
+            </div>
+
+            <div class="use-case">
+                <h4 class="use-case-title">⚖️ Legal & Compliance</h4>
+                <p class="use-case-description">Review contracts, regulations, and case files. Quickly navigate between sections of complex legal documents.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section class="pricing">
+        <h2 class="section-title">Simple, Transparent Pricing</h2>
+        <p class="section-subtitle">Everything you need, nothing you don't</p>
+        
+        <div class="pricing-card">
+            <h3>PDF Reader PRO</h3>
+            <div class="price">FREE</div>
+            <p class="price-subtitle">Forever. No credit card required.</p>
+            
+            <div class="pricing-features">
+                <div class="pricing-feature">Unlimited PDF uploads</div>
+                <div class="pricing-feature">Automatic progress tracking</div>
+                <div class="pricing-feature">Table of contents navigation</div>
+                <div class="pricing-feature">Zoom & view customization</div>
+                <div class="pricing-feature">Fullscreen reading mode</div>
+                <div class="pricing-feature">Works on all devices</div>
+                <div class="pricing-feature">Cloud-based library</div>
+                <div class="pricing-feature">No ads, ever</div>
+            </div>
+            
+            <a href="#get-started" class="cta-button-white">Get Started Now</a>
+        </div>
+    </section>
+
+    <!-- Final CTA -->
+    <section class="final-cta" id="get-started">
+        <h2>Ready to Transform Your PDF Reading?</h2>
+        <p>Join thousands who've already simplified their document workflow.<br>Start building your library today—completely free.</p>
+        <a href="https://claude.ai" class="cta-button-white">Launch PDF Reader PRO</a>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2025 PDF Reader PRO. Built for readers, by readers.</p>
+    </footer>
+</body>
+</html>
