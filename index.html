@@ -415,7 +415,7 @@
                 </div>
                 <div class="pdf-viewer" id="pdfViewer">
                     <div class="empty-state">
-                        <div class="empty-state-icon">📄</div>
+                        <div class="empty-state-icon"></div>
                         <h3>No PDF Loaded</h3>
                         <p>Click "Add PDF" to load a document from URL</p>
                     </div>
@@ -464,7 +464,7 @@
         function renderLibrary() {
             const list = document.getElementById('libraryList');
             if (library.length === 0) {
-                list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📚</div><p>Your library is empty</p></div>';
+                list.innerHTML = '<div class="empty-state"><div class="empty-state-icon"></div><p>Your library is empty</p></div>';
                 return;
             }
             list.innerHTML = library.map((item, idx) => `
@@ -582,7 +582,7 @@
             
             // Show loading indicator
             const viewer = document.getElementById('pdfViewer');
-            viewer.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⏳</div><h3>Loading PDF...</h3></div>';
+            viewer.innerHTML = '<div class="empty-state"><div class="empty-state-icon"></div><h3>Loading PDF...</h3></div>';
             
             try {
                 // Try multiple loading methods for better reliability
