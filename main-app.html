@@ -133,6 +133,8 @@
             cursor: pointer;
             transition: all 0.3s;
             border: 2px solid #e0e0e0;
+            user-select: none;
+            position: relative;
         }
 
         .library-item:hover {
@@ -144,6 +146,17 @@
         .library-item.active {
             border-color: #667eea;
             background: #f0f4ff;
+        }
+
+        /* Visual feedback when an item is being dragged or is the drop target */
+        .library-item.dragging {
+            opacity: 0.6;
+            box-shadow: 0 0 0 2px #764ba2;
+        }
+
+        .library-item.drag-over {
+            border-color: #764ba2;
+            box-shadow: 0 0 0 2px #667eea;
         }
 
         .library-item-title {
@@ -456,6 +469,11 @@
         let pdfDoc = null;
         let currentPdfId = null;
 
+        // Variables for drag-to-swap
+        let dragStartIndex = null;
+        let dragCurrentIndex = null;
+        let isDraggingLibraryItem = false;
+
         // Update zoom display on load
         function updateZoomDisplay() {
             document.getElementById('zoomLevel').textContent = Math.round((scale / 1.5) * 100) + '%';
@@ -468,15 +486,79 @@
                 return;
             }
             list.innerHTML = library.map((item, idx) => `
-                <div class="library-item ${currentPdfId === item.id ? 'active' : ''}" onclick="loadPdfFromLibrary(${idx})">
-                    <div class="library-item-title">${item.name}</div>
-                    <div class="library-item-progress">Page ${item.currentPage} of ${item.totalPages}</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: ${(item.currentPage / item.totalPages * 100)}%"></div>
+                <div class="library-item ${currentPdfId === item.id ? 'active' : ''}"
+                     data-index="${idx}">
+                    <div onclick="loadPdfFromLibrary(${idx})">
+                        <div class="library-item-title">${item.name}</div>
+                        <div class="library-item-progress">Page ${item.currentPage} of ${item.totalPages}</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${(item.currentPage / item.totalPages * 100)}%"></div>
+                        </div>
                     </div>
                     <button class="delete-btn" onclick="event.stopPropagation(); deletePdf(${idx})">Delete</button>
                 </div>
             `).join('');
+
+            // Attach drag handlers after rendering
+            attachLibraryDragHandlers();
+        }
+
+        // Attach mouse-based drag handlers to library items to support swapping
+        function attachLibraryDragHandlers() {
+            const items = document.querySelectorAll('.library-item');
+            items.forEach(item => {
+                item.onmousedown = function(e) {
+                    // Ignore right-click or clicks on delete button
+                    if (e.button !== 0 || e.target.classList.contains('delete-btn')) return;
+
+                    isDraggingLibraryItem = true;
+                    dragStartIndex = parseInt(this.getAttribute('data-index'));
+                    dragCurrentIndex = dragStartIndex;
+                    this.classList.add('dragging');
+
+                    const currentItem = this;
+
+                    function onMouseMove(ev) {
+                        if (!isDraggingLibraryItem) return;
+                        const el = document.elementFromPoint(ev.clientX, ev.clientY);
+                        if (!el) return;
+                        const targetItem = el.closest('.library-item');
+                        document.querySelectorAll('.library-item.drag-over').forEach(i => i.classList.remove('drag-over'));
+                        if (targetItem && targetItem !== currentItem) {
+                            targetItem.classList.add('drag-over');
+                            dragCurrentIndex = parseInt(targetItem.getAttribute('data-index'));
+                        } else {
+                            dragCurrentIndex = dragStartIndex;
+                        }
+                    }
+
+                    function onMouseUp(ev) {
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+
+                        if (!isDraggingLibraryItem) return;
+                        isDraggingLibraryItem = false;
+
+                        currentItem.classList.remove('dragging');
+                        document.querySelectorAll('.library-item.drag-over').forEach(i => i.classList.remove('drag-over'));
+
+                        if (dragCurrentIndex !== null && dragStartIndex !== null && dragCurrentIndex !== dragStartIndex) {
+                            // Swap positions in library array
+                            const temp = library[dragStartIndex];
+                            library[dragStartIndex] = library[dragCurrentIndex];
+                            library[dragCurrentIndex] = temp;
+                            localStorage.setItem('pdfLibrary', JSON.stringify(library));
+                            renderLibrary();
+                        }
+
+                        dragStartIndex = null;
+                        dragCurrentIndex = null;
+                    }
+
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                };
+            });
         }
 
         function openAddModal() {
