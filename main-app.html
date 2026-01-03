@@ -430,7 +430,7 @@
                 </div>
                 <div class="pdf-viewer" id="pdfViewer">
                     <div class="empty-state">
-                        <div class="empty-state-icon">Empty</div>
+                        <div class="empty-state-icon">📄</div>
                         <h3>No PDF Loaded</h3>
                         <p>Click "Add PDF" to load a document from URL</p>
                     </div>
@@ -472,7 +472,6 @@
         let currentPdfId = null;
         let draggedIndex = null;
 
-        // Update zoom display on load
         function updateZoomDisplay() {
             document.getElementById('zoomLevel').textContent = Math.round((scale / 1.5) * 100) + '%';
         }
@@ -496,10 +495,8 @@
                 </div>
             `).join('');
             
-            // Add drag and drop event listeners AND click handlers
             const items = list.querySelectorAll('.library-item');
             items.forEach((item, idx) => {
-                // Drag events
                 item.addEventListener('dragstart', handleDragStart);
                 item.addEventListener('dragend', handleDragEnd);
                 item.addEventListener('dragover', handleDragOver);
@@ -507,7 +504,6 @@
                 item.addEventListener('drop', handleDrop);
                 item.addEventListener('dragleave', handleDragLeave);
                 
-                // Click to load PDF (separate from drag)
                 item.addEventListener('click', (e) => {
                     if (!e.target.classList.contains('delete-btn')) {
                         loadPdfFromLibrary(idx);
@@ -522,7 +518,6 @@
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('text/plain', draggedIndex);
             
-            // Prevent click from firing
             setTimeout(() => {
                 this.style.opacity = '0.5';
             }, 0);
@@ -532,7 +527,6 @@
             this.classList.remove('dragging');
             this.style.opacity = '';
             
-            // Remove drag-over class from all items
             document.querySelectorAll('.library-item').forEach(item => {
                 item.classList.remove('drag-over');
             });
@@ -569,15 +563,11 @@
             const dropIndex = parseInt(this.getAttribute('data-index'));
             
             if (draggedIndex !== null && draggedIndex !== dropIndex) {
-                // Swap the items in the library array
                 const temp = library[draggedIndex];
                 library[draggedIndex] = library[dropIndex];
                 library[dropIndex] = temp;
                 
-                // Save to localStorage
                 localStorage.setItem('pdfLibrary', JSON.stringify(library));
-                
-                // Re-render with animation
                 renderLibrary();
             }
             
@@ -589,7 +579,6 @@
             const x = e.clientX;
             const y = e.clientY;
             
-            // Check if we're truly leaving the element
             if (x < rect.left || x >= rect.right || y < rect.top || y >= rect.bottom) {
                 this.classList.remove('drag-over');
             }
@@ -614,16 +603,14 @@
                 return;
             }
 
-            // Show loading state
             const addButton = event.target;
             const originalText = addButton.textContent;
             addButton.textContent = 'Loading...';
             addButton.disabled = true;
 
             try {
-                // Try multiple CORS proxies for better reliability
                 const proxies = [
-                    url, // Try direct access first
+                    url,
                     `https://corsproxy.io/?${encodeURIComponent(url)}`,
                     `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
                     `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
@@ -641,17 +628,16 @@
                             withCredentials: false
                         });
                         
-                        // Add timeout to prevent infinite loading
                         const timeoutPromise = new Promise((_, reject) => 
                             setTimeout(() => reject(new Error('Loading timeout')), 10000)
                         );
                         
                         pdf = await Promise.race([loadingTask.promise, timeoutPromise]);
-                        break; // Success! Exit the loop
+                        break;
                     } catch (err) {
                         lastError = err;
                         console.warn(`Failed with proxy: ${proxyUrl}`, err);
-                        continue; // Try next proxy
+                        continue;
                     }
                 }
 
@@ -691,7 +677,7 @@
                 if (library.length === 0) {
                     document.getElementById('pdfViewer').innerHTML = `
                         <div class="empty-state">
-                            <div class="empty-state-icon">Empty</div>
+                            <div class="empty-state-icon">📄</div>
                             <h3>No PDF Loaded</h3>
                             <p>Click "Add PDF" to load a document from URL</p>
                         </div>
@@ -704,14 +690,12 @@
             const item = library[index];
             currentPdfId = item.id;
             
-            // Show loading indicator
             const viewer = document.getElementById('pdfViewer');
-            viewer.innerHTML = '<div class="empty-state"><div class="empty-state-icon">Initializing</div><h3>Loading PDF...</h3></div>';
+            viewer.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⏳</div><h3>Loading PDF...</h3></div>';
             
             try {
-                // Try multiple loading methods for better reliability
                 const proxies = [
-                    item.url, // Try direct first
+                    item.url,
                     `https://corsproxy.io/?${encodeURIComponent(item.url)}`,
                     `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(item.url)}`,
                     `https://api.allorigins.win/raw?url=${encodeURIComponent(item.url)}`
@@ -729,13 +713,12 @@
                             withCredentials: false
                         });
                         
-                        // Add timeout to prevent infinite loading
                         const timeoutPromise = new Promise((_, reject) => 
                             setTimeout(() => reject(new Error('Loading timeout')), 10000)
                         );
                         
                         pdf = await Promise.race([loadingTask.promise, timeoutPromise]);
-                        break; // Success!
+                        break;
                     } catch (err) {
                         lastError = err;
                         console.warn(`Failed to load with: ${proxyUrl}`, err);
@@ -761,7 +744,7 @@
                 renderLibrary();
                 updateProgress();
             } catch (error) {
-                viewer.innerHTML = `<div class="empty-state"><div class="empty-state-icon">Failed</div><h3>Failed to Load PDF</h3><p>${error.message}</p></div>`;
+                viewer.innerHTML = `<div class="empty-state"><div class="empty-state-icon">❌</div><h3>Failed to Load PDF</h3><p>${error.message}</p></div>`;
                 console.error(error);
             }
         }
@@ -918,7 +901,6 @@
             }
         }
 
-        // Listen for fullscreen changes (in case user presses ESC)
         document.addEventListener('fullscreenchange', () => {
             const btn = document.getElementById('fullscreenBtn');
             if (!document.fullscreenElement) {
@@ -926,7 +908,6 @@
             }
         });
 
-        // Initialize
         renderLibrary();
     </script>
 </body>
