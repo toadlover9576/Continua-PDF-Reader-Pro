@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta name="google-site-verification" content="E7knuFVZA_dGkubXqO4pMzNhFaQk7aSImN985b-rjGs" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Continua | PDF Reader Pro</title>
@@ -129,31 +130,20 @@
             padding: 15px;
             margin-bottom: 10px;
             border-radius: 10px;
-            cursor: grab;
+            cursor: pointer;
             transition: all 0.3s;
             border: 2px solid #e0e0e0;
-            position: relative;
-            user-select: none;
         }
 
         .library-item:hover {
             border-color: #667eea;
+            transform: translateX(5px);
             box-shadow: 0 5px 15px rgba(102,126,234,0.2);
         }
 
         .library-item.active {
             border-color: #667eea;
             background: #f0f4ff;
-        }
-
-        .library-item.dragging {
-            opacity: 0.4;
-            cursor: grabbing;
-        }
-
-        .library-item.drag-over {
-            border-top: 3px solid #764ba2;
-            margin-top: 10px;
         }
 
         .library-item-title {
@@ -383,7 +373,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Continua | PDF Reader PRO</h1>
+            <h1> Continua | PDF Reader PRO</h1>
             <div class="header-buttons">
                 <button class="btn btn-primary" onclick="openAddModal()">+ Add PDF</button>
                 <button class="btn btn-secondary" onclick="toggleSidebar()">☰ Menu</button>
@@ -425,7 +415,7 @@
                 </div>
                 <div class="pdf-viewer" id="pdfViewer">
                     <div class="empty-state">
-                        <div class="empty-state-icon">📄</div>
+                        <div class="empty-state-icon"></div>
                         <h3>No PDF Loaded</h3>
                         <p>Click "Add PDF" to load a document from URL</p>
                     </div>
@@ -458,7 +448,6 @@
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        // State management - load from localStorage on startup
         let library = JSON.parse(localStorage.getItem('pdfLibrary') || '[]');
         let currentPdf = null;
         let currentPage = 1;
@@ -466,9 +455,8 @@
         let scale = 1.5;
         let pdfDoc = null;
         let currentPdfId = null;
-        let draggedElement = null;
-        let draggedIndex = null;
 
+        // Update zoom display on load
         function updateZoomDisplay() {
             document.getElementById('zoomLevel').textContent = Math.round((scale / 1.5) * 100) + '%';
         }
@@ -476,14 +464,11 @@
         function renderLibrary() {
             const list = document.getElementById('libraryList');
             if (library.length === 0) {
-                list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📚</div><p>Your library is empty</p></div>';
+                list.innerHTML = '<div class="empty-state"><div class="empty-state-icon"></div><p>Your library is empty</p></div>';
                 return;
             }
-            
             list.innerHTML = library.map((item, idx) => `
-                <div class="library-item ${currentPdfId === item.id ? 'active' : ''}" 
-                     draggable="true" 
-                     data-index="${idx}">
+                <div class="library-item ${currentPdfId === item.id ? 'active' : ''}" onclick="loadPdfFromLibrary(${idx})">
                     <div class="library-item-title">${item.name}</div>
                     <div class="library-item-progress">Page ${item.currentPage} of ${item.totalPages}</div>
                     <div class="progress-bar">
@@ -492,80 +477,6 @@
                     <button class="delete-btn" onclick="event.stopPropagation(); deletePdf(${idx})">Delete</button>
                 </div>
             `).join('');
-            
-            // Add drag and drop event listeners
-            const items = list.querySelectorAll('.library-item');
-            items.forEach((item, idx) => {
-                item.addEventListener('dragstart', handleDragStart);
-                item.addEventListener('dragend', handleDragEnd);
-                item.addEventListener('dragover', handleDragOver);
-                item.addEventListener('drop', handleDrop);
-                item.addEventListener('dragleave', handleDragLeave);
-                
-                // Click to load PDF
-                item.addEventListener('click', (e) => {
-                    if (!e.target.classList.contains('delete-btn') && !item.classList.contains('dragging')) {
-                        loadPdfFromLibrary(idx);
-                    }
-                });
-            });
-        }
-
-        function handleDragStart(e) {
-            draggedElement = this;
-            draggedIndex = parseInt(this.getAttribute('data-index'));
-            this.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/html', this.innerHTML);
-        }
-
-        function handleDragEnd(e) {
-            this.classList.remove('dragging');
-            document.querySelectorAll('.library-item').forEach(item => {
-                item.classList.remove('drag-over');
-            });
-            draggedElement = null;
-            draggedIndex = null;
-        }
-
-        function handleDragOver(e) {
-            if (e.preventDefault) {
-                e.preventDefault();
-            }
-            e.dataTransfer.dropEffect = 'move';
-            return false;
-        }
-
-        function handleDrop(e) {
-            if (e.stopPropagation) {
-                e.stopPropagation();
-            }
-            e.preventDefault();
-            
-            const dropIndex = parseInt(this.getAttribute('data-index'));
-            
-            if (draggedElement !== this && draggedIndex !== null && draggedIndex !== dropIndex) {
-                // Reorder the library array
-                const draggedItem = library[draggedIndex];
-                library.splice(draggedIndex, 1);
-                
-                // Adjust drop index if needed
-                const newDropIndex = draggedIndex < dropIndex ? dropIndex - 1 : dropIndex;
-                library.splice(newDropIndex, 0, draggedItem);
-                
-                // Save to localStorage
-                localStorage.setItem('pdfLibrary', JSON.stringify(library));
-                
-                // Re-render
-                renderLibrary();
-            }
-            
-            this.classList.remove('drag-over');
-            return false;
-        }
-
-        function handleDragLeave(e) {
-            this.classList.remove('drag-over');
         }
 
         function openAddModal() {
@@ -587,14 +498,16 @@
                 return;
             }
 
+            // Show loading state
             const addButton = event.target;
             const originalText = addButton.textContent;
             addButton.textContent = 'Loading...';
             addButton.disabled = true;
 
             try {
+                // Try multiple CORS proxies for better reliability
                 const proxies = [
-                    url,
+                    url, // Try direct access first
                     `https://corsproxy.io/?${encodeURIComponent(url)}`,
                     `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
                     `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
@@ -612,16 +525,17 @@
                             withCredentials: false
                         });
                         
+                        // Add timeout to prevent infinite loading
                         const timeoutPromise = new Promise((_, reject) => 
                             setTimeout(() => reject(new Error('Loading timeout')), 10000)
                         );
                         
                         pdf = await Promise.race([loadingTask.promise, timeoutPromise]);
-                        break;
+                        break; // Success! Exit the loop
                     } catch (err) {
                         lastError = err;
                         console.warn(`Failed with proxy: ${proxyUrl}`, err);
-                        continue;
+                        continue; // Try next proxy
                     }
                 }
 
@@ -655,14 +569,10 @@
 
         function deletePdf(index) {
             if (confirm('Are you sure you want to delete this PDF from your library?')) {
-                const deletedId = library[index].id;
                 library.splice(index, 1);
                 localStorage.setItem('pdfLibrary', JSON.stringify(library));
                 renderLibrary();
-                
-                if (currentPdfId === deletedId) {
-                    currentPdfId = null;
-                    pdfDoc = null;
+                if (library.length === 0) {
                     document.getElementById('pdfViewer').innerHTML = `
                         <div class="empty-state">
                             <div class="empty-state-icon">📄</div>
@@ -678,12 +588,14 @@
             const item = library[index];
             currentPdfId = item.id;
             
+            // Show loading indicator
             const viewer = document.getElementById('pdfViewer');
-            viewer.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⏳</div><h3>Loading PDF...</h3></div>';
+            viewer.innerHTML = '<div class="empty-state"><div class="empty-state-icon"></div><h3>Loading PDF...</h3></div>';
             
             try {
+                // Try multiple loading methods for better reliability
                 const proxies = [
-                    item.url,
+                    item.url, // Try direct first
                     `https://corsproxy.io/?${encodeURIComponent(item.url)}`,
                     `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(item.url)}`,
                     `https://api.allorigins.win/raw?url=${encodeURIComponent(item.url)}`
@@ -701,12 +613,13 @@
                             withCredentials: false
                         });
                         
+                        // Add timeout to prevent infinite loading
                         const timeoutPromise = new Promise((_, reject) => 
                             setTimeout(() => reject(new Error('Loading timeout')), 10000)
                         );
                         
                         pdf = await Promise.race([loadingTask.promise, timeoutPromise]);
-                        break;
+                        break; // Success!
                     } catch (err) {
                         lastError = err;
                         console.warn(`Failed to load with: ${proxyUrl}`, err);
@@ -789,6 +702,7 @@
             
             function renderOutline(items, level = 0) {
                 return items.map(item => {
+                    const pageNum = item.dest ? (Array.isArray(item.dest) ? item.dest[0] : null) : null;
                     return `
                         <div class="toc-item" style="padding-left: ${level * 20 + 10}px" onclick="goToTocPage('${item.dest}')">
                             ${item.title}
@@ -888,6 +802,7 @@
             }
         }
 
+        // Listen for fullscreen changes (in case user presses ESC)
         document.addEventListener('fullscreenchange', () => {
             const btn = document.getElementById('fullscreenBtn');
             if (!document.fullscreenElement) {
