@@ -131,7 +131,7 @@ body {
     margin-bottom: 10px;
     border-radius: 10px;
     cursor: grab;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     border: 2px solid #e0e0e0;
     user-select: none;
     position: relative;
@@ -142,26 +142,35 @@ body {
 .library-item:hover {
     border-color: #667eea;
     transform: translateX(5px);
-    box-shadow: 0 5px 15px rgba(102,126,234,0.2);
+    box-shadow: 0 8px 25px rgba(102,126,234,0.25);
 }
 
 .library-item.active {
     border-color: #667eea;
     background: #f0f4ff;
+    box-shadow: 0 0 0 3px rgba(102,126,234,0.3);
 }
 
 .library-item.dragging {
     opacity: 0.7;
-    cursor: grabbing !important;
-    transform: rotate(3deg) scale(1.02);
-    box-shadow: 0 15px 35px rgba(102,126,234,0.4);
+    transform: rotate(5deg) scale(1.02) !important;
+    border-color: #ff6b6b;
+    box-shadow: 0 20px 40px rgba(255,107,107,0.4);
     z-index: 1000;
 }
 
-.library-item.drop-zone {
-    border: 2px dashed #667eea;
-    background: linear-gradient(135deg, #f0f4ff, #e8f0fe);
-    transform: scale(1.02);
+.library-item.drag-over-top {
+    border-top: 4px solid #667eea;
+    background: linear-gradient(to bottom, #eef2ff 0%, white 20%);
+}
+
+.library-item.drag-over-bottom {
+    border-bottom: 4px solid #667eea;
+    background: linear-gradient(to top, #eef2ff 0%, white 20%);
+}
+
+.library-item:active {
+    cursor: grabbing;
 }
 
 .library-item-main {
@@ -191,7 +200,8 @@ body {
 .progress-fill {
     height: 100%;
     background: linear-gradient(90deg, #667eea, #764ba2);
-    transition: width 0.3s;
+    transition: width 0.3s ease;
+    border-radius: 2px;
 }
 
 .library-item-right {
@@ -536,7 +546,7 @@ body {
 </div>
 <div class="pdf-viewer" id="pdfViewer">
 <div class="empty-state">
-<div class="empty-state-icon"></div>
+<div class="empty-state-icon">📚</div>
 <h3>No PDF Loaded</h3>
 <p>Click "Add PDF" to load a document from URL</p>
 </div>
@@ -618,75 +628,7 @@ localStorage.setItem('pdfLibrary', JSON.stringify(library));
 localStorage.setItem('pdfFolders', JSON.stringify(folders));
 localStorage.setItem('pdfActiveFolder', activeFolder);
 
-let draggedIndex = null;
-
-// Drag & Drop Reordering System
-function enableDragAndDrop() {
-    const items = document.querySelectorAll('.library-item');
-    items.forEach(item => {
-        item.setAttribute('draggable', true);
-
-        item.addEventListener('dragstart', (e) => {
-            draggedIndex = parseInt(item.dataset.index);
-            item.classList.add('dragging');
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/html', item.outerHTML);
-        });
-
-        item.addEventListener('dragend', () => {
-            item.classList.remove('dragging');
-            document.querySelectorAll('.drop-zone').forEach(zone => zone.classList.remove('drop-zone'));
-            document.querySelectorAll('.library-item').forEach(i => {
-                i.style.transform = '';
-            });
-        });
-
-        item.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-            
-            const rect = item.getBoundingClientRect();
-            const offset = e.clientY - rect.top;
-            const height = rect.height;
-
-            // Super satisfying visual feedback
-            item.classList.add('drop-zone');
-            
-            if (offset > height / 2) {
-                item.style.transform = 'translateY(8px) scale(1.02)';
-            } else {
-                item.style.transform = 'translateY(-8px) scale(1.02)';
-            }
-        });
-
-        item.addEventListener('dragleave', (e) => {
-            if (!item.closest('.library-item')) {
-                item.classList.remove('drop-zone');
-                item.style.transform = '';
-            }
-        });
-
-        item.addEventListener('drop', (e) => {
-            e.preventDefault();
-            const targetIndex = parseInt(item.dataset.index);
-            
-            if (draggedIndex !== null && draggedIndex !== targetIndex) {
-                // Animate swap
-                item.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
-                item.style.transform = 'scale(1.05)';
-                
-                setTimeout(() => {
-                    // Swap items in array
-                    const draggedItem = library.splice(draggedIndex, 1)[0];
-                    library.splice(targetIndex, 0, draggedItem);
-                    localStorage.setItem('pdfLibrary', JSON.stringify(library));
-                    renderLibrary();
-                }, 150);
-            }
-            draggedIndex = null;
-        });
-    });
-}
+let dragData = { draggedElement: null, draggedIndex: -1, dropTarget: null };
 
 function saveFolders() {
     localStorage.setItem('pdfFolders', JSON.stringify(folders));
@@ -716,17 +658,17 @@ function renderFolderSelect() {
 
     if (palette) {
         palette.innerHTML = folders.map(f => `
-            <div class="folder-pill" data-folder="${f.name}" onclick="setActiveFolder('${f.name}')">
+            <div class="folder-pill" data-folder="${f.name}" onclick="changeFolderByPill('${f.name}')">
                 ${f.icon || '📁'} ${f.name}
             </div>
         `).join('');
     }
 }
 
-function setActiveFolder(name) {
-    activeFolder = name;
+function changeFolderByPill(folderName) {
+    activeFolder = folderName;
+    document.getElementById('folderSelect').value = folderName;
     saveFolders();
-    document.getElementById('folderSelect').value = name;
     renderLibrary();
 }
 
@@ -901,6 +843,7 @@ document.addEventListener('click', (e) => {
     }
 });
 
+// 🔥 SUPER SMOOTH DRAG & DROP IMPLEMENTATION
 function renderLibrary() {
     const list = document.getElementById('libraryList');
     if (!list) return;
@@ -915,7 +858,7 @@ function renderLibrary() {
     }
 
     if (visibleItems.length === 0) {
-        list.innerHTML = '<div class="empty-state"><div class="empty-state-icon"></div><p>No books in this folder</p></div>';
+        list.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📚</div><p>No books in this folder</p></div>';
         return;
     }
 
@@ -926,23 +869,23 @@ function renderLibrary() {
             item.folders.includes(activeFolder);
         return `
         <div class="library-item ${currentPdfId === item.id ? 'active' : ''}"
-             data-index="${realIndex}" draggable="true">
+             data-index="${realIndex}">
             <div class="library-item-main" onclick="loadPdfFromLibrary(${realIndex})">
                 <div class="library-item-title">${item.name}</div>
                 <div class="library-item-progress">Page ${item.currentPage || 1} of ${item.totalPages || 1}</div>
                 <div class="progress-bar">
-                    <div class="progress-fill" style="width: ${(item.currentPage && item.totalPages ? (item.currentPage / item.totalPages * 100) : 0)}%"></div>
+                    <div class="progress-fill" style="width: ${Math.min((item.currentPage / item.totalPages * 100) || 0, 100)}%"></div>
                 </div>
             </div>
             <div class="library-item-right">
                 <button class="book-menu-btn" onclick="toggleBookMenu(event, ${realIndex})">⋮</button>
                 <button class="delete-btn" onclick="event.stopPropagation(); deletePdf(${realIndex})">Delete</button>
                 <div class="book-menu-dropdown">
-                    <div class="book-menu-item" onclick="addBookToFolder(${realIndex}); event.stopPropagation();">
+                    <div class="book-menu-item" onclick="addBookToFolder(${realIndex})">
                         Add to folder
                     </div>
                     <div class="book-menu-item ${canRemoveFromFolder ? '' : 'disabled'}"
-                         onclick="${canRemoveFromFolder ? `removeBookFromCurrentFolder(${realIndex}); event.stopPropagation();` : 'event.stopPropagation();'}">
+                         onclick="${canRemoveFromFolder ? `removeBookFromCurrentFolder(${realIndex})` : 'event.stopPropagation();'}">
                         Remove from this folder
                     </div>
                 </div>
@@ -951,8 +894,117 @@ function renderLibrary() {
         `;
     }).join('');
 
-    // Enable drag & drop AFTER rendering
-    setTimeout(enableDragAndDrop, 50);
+    // Re-attach drag events after re-render
+    attachDragEvents();
+}
+
+function attachDragEvents() {
+    const items = document.querySelectorAll('.library-item');
+    
+    items.forEach((item, index) => {
+        // Drag start
+        item.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.book-menu-btn, .delete-btn, .book-menu-dropdown')) return;
+            
+            dragData.draggedElement = item;
+            dragData.draggedIndex = parseInt(item.dataset.index);
+            
+            item.classList.add('dragging');
+            document.body.style.cursor = 'grabbing';
+            
+            const rect = item.getBoundingClientRect();
+            const dragOffset = {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+            
+            function onMouseMove(e) {
+                item.style.position = 'fixed';
+                item.style.zIndex = '10000';
+                item.style.left = (e.clientX - dragOffset.x) + 'px';
+                item.style.top = (e.clientY - dragOffset.y) + 'px';
+                item.style.width = rect.width + 'px';
+                item.style.pointerEvents = 'none';
+                
+                // Find drop targets
+                items.forEach(otherItem => {
+                    if (otherItem === item) return;
+                    
+                    const otherRect = otherItem.getBoundingClientRect();
+                    const itemCenterY = e.clientY;
+                    const otherCenterY = otherRect.top + otherRect.height / 2;
+                    
+                    otherItem.classList.remove('drag-over-top', 'drag-over-bottom');
+                    
+                    if (Math.abs(itemCenterY - otherCenterY) < 40) {
+                        if (itemCenterY < otherCenterY) {
+                            otherItem.classList.add('drag-over-top');
+                            dragData.dropTarget = { element: otherItem, position: 'before' };
+                        } else {
+                            otherItem.classList.add('drag-over-bottom');
+                            dragData.dropTarget = { element: otherItem, position: 'after' };
+                        }
+                    }
+                });
+            }
+            
+            function onMouseUp(e) {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                
+                document.body.style.cursor = 'default';
+                
+                if (dragData.dropTarget && dragData.dropTarget.element !== item) {
+                    const dropIndex = parseInt(dragData.dropTarget.element.dataset.index);
+                    const insertBefore = dragData.dropTarget.position === 'before';
+                    
+                    swapBooksWithAnimation(dragData.draggedIndex, dropIndex, insertBefore);
+                } else {
+                    resetDragState();
+                }
+            }
+            
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        });
+    });
+}
+
+function swapBooksWithAnimation(fromIndex, toIndex, insertBefore = true) {
+    if (fromIndex === toIndex) {
+        resetDragState();
+        return;
+    }
+    
+    const fromBook = library[fromIndex];
+    const list = document.getElementById('libraryList');
+    
+    // Animate swap
+    library.splice(fromIndex, 1);
+    const actualToIndex = insertBefore ? toIndex : toIndex + 1;
+    library.splice(actualToIndex, 0, fromBook);
+    
+    requestAnimationFrame(() => {
+        renderLibrary();
+        localStorage.setItem('pdfLibrary', JSON.stringify(library));
+        resetDragState();
+    });
+}
+
+function resetDragState() {
+    dragData = { draggedElement: null, draggedIndex: -1, dropTarget: null };
+    
+    document.querySelectorAll('.library-item').forEach(item => {
+        item.classList.remove('dragging', 'drag-over-top', 'drag-over-bottom');
+        item.style.position = '';
+        item.style.left = '';
+        item.style.top = '';
+        item.style.width = '';
+        item.style.zIndex = '';
+        item.style.pointerEvents = '';
+    });
+    
+    document.body.style.cursor = 'default';
 }
 
 function openAddModal() {
@@ -1051,7 +1103,7 @@ function deletePdf(index) {
         if (library.length === 0) {
             document.getElementById('pdfViewer').innerHTML = `
                 <div class="empty-state">
-                    <div class="empty-state-icon"></div>
+                    <div class="empty-state-icon">📚</div>
                     <h3>No PDF Loaded</h3>
                     <p>Click "Add PDF" to load a document from URL</p>
                 </div>
@@ -1065,7 +1117,7 @@ async function loadPdfFromLibrary(index) {
     currentPdfId = item.id;
 
     const viewer = document.getElementById('pdfViewer');
-    viewer.innerHTML = '<div class="empty-state"><div class="empty-state-icon"></div><h3>Loading PDF...</h3></div>';
+    viewer.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⏳</div><h3>Loading PDF...</h3></div>';
 
     try {
         const proxies = [
@@ -1111,6 +1163,7 @@ async function loadPdfFromLibrary(index) {
 
         document.getElementById('totalPages').textContent = totalPages;
         document.getElementById('pageInput').max = totalPages;
+        document.getElementById('pageInput').value = currentPage;
         updateZoomDisplay();
 
         await renderPage(currentPage);
@@ -1118,7 +1171,7 @@ async function loadPdfFromLibrary(index) {
         renderLibrary();
         updateProgress();
     } catch (error) {
-        viewer.innerHTML = `<div class="empty-state"><div class="empty-state-icon"></div><h3>Failed to Load PDF</h3><p>${error.message}</p></div>`;
+        viewer.innerHTML = `<div class="empty-state"><div class="empty-state-icon">❌</div><h3>Failed to Load PDF</h3><p>${error.message}</p></div>`;
         console.error(error);
     }
 }
@@ -1285,7 +1338,7 @@ document.addEventListener('fullscreenchange', () => {
     }
 });
 
-// Initialize app
+// Initialize
 renderFolderSelect();
 renderLibrary();
 updateZoomDisplay();
