@@ -122,35 +122,10 @@
         .tab-content {
             flex: 1;
             overflow-y: auto;
-            padding: 0;
-        }
-
-        .breadcrumb {
-            padding: 15px 20px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #dee2e6;
-            font-size: 13px;
-            color: #6c757d;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            flex-wrap: wrap;
-        }
-
-        .breadcrumb-item {
-            cursor: pointer;
-            color: #667eea;
-        }
-
-        .breadcrumb-item:hover {
-            text-decoration: underline;
-        }
-
-        .library-content {
             padding: 20px;
         }
 
-        .library-item, .folder-item {
+        .library-item {
             background: white;
             padding: 15px;
             margin-bottom: 10px;
@@ -162,7 +137,7 @@
             position: relative;
         }
 
-        .library-item:hover, .folder-item:hover {
+        .library-item:hover {
             border-color: #667eea;
             transform: translateX(5px);
             box-shadow: 0 5px 15px rgba(102,126,234,0.2);
@@ -173,71 +148,14 @@
             background: #f0f4ff;
         }
 
-        .library-item.dragging, .folder-item.dragging {
+        .library-item.dragging {
             opacity: 0.6;
             box-shadow: 0 0 0 2px #764ba2;
         }
 
-        .library-item.drag-over, .folder-item.drag-over {
+        .library-item.drag-over {
             border-color: #764ba2;
             box-shadow: 0 0 0 2px #667eea;
-        }
-
-        .folder-item {
-            background: #f8f9fa;
-            border: 2px solid #dee2e6;
-        }
-
-        .folder-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .folder-icon {
-            font-size: 16px;
-            font-weight: bold;
-            color: #667eea;
-            width: 20px;
-        }
-
-        .folder-title {
-            flex: 1;
-            font-weight: 600;
-            color: #333;
-            font-size: 14px;
-        }
-
-        .folder-count {
-            font-size: 11px;
-            color: #6c757d;
-        }
-
-        .folder-actions {
-            display: flex;
-            gap: 5px;
-            opacity: 0;
-            transition: opacity 0.2s;
-        }
-
-        .folder-item:hover .folder-actions {
-            opacity: 1;
-        }
-
-        .folder-btn {
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            padding: 5px 8px;
-            border-radius: 3px;
-            font-size: 11px;
-            color: #6c757d;
-            font-weight: 500;
-        }
-
-        .folder-btn:hover {
-            background: rgba(102,126,234,0.1);
-            color: #667eea;
         }
 
         .library-item-title {
@@ -446,6 +364,21 @@
             background: #c82333;
         }
 
+        .library-folder {
+            margin-bottom: 10px;
+        }
+
+        .folder-actions {
+            display: flex;
+            gap: 5px;
+            margin: 5px 0 10px 5px;
+        }
+
+        .folder-actions .delete-btn {
+            background: #6c757d;
+            font-size: 11px;
+        }
+
         ::-webkit-scrollbar {
             width: 10px;
         }
@@ -467,11 +400,10 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Continua | PDF Reader PRO</h1>
+            <h1> Continua | PDF Reader PRO</h1>
             <div class="header-buttons">
                 <button class="btn btn-primary" onclick="openAddModal()">+ Add PDF</button>
-                <button class="btn btn-secondary" onclick="openAddFolderModal()">+ New Folder</button>
-                <button class="btn btn-secondary" onclick="toggleSidebar()">Menu</button>
+                <button class="btn btn-secondary" onclick="toggleSidebar()">☰ Menu</button>
             </div>
         </div>
 
@@ -482,23 +414,22 @@
                     <div class="tab" onclick="switchTab('toc')">Contents</div>
                 </div>
                 <div class="tab-content" id="libraryTab">
-                    <div class="breadcrumb" id="breadcrumb"></div>
-                    <div class="library-content" id="libraryList"></div>
+                    <div id="libraryList"></div>
                 </div>
                 <div class="tab-content" id="tocTab" style="display: none;">
-                    <div style="padding: 20px;" id="tocList"></div>
+                    <div id="tocList"></div>
                 </div>
             </div>
 
             <div class="viewer-container">
                 <div class="toolbar">
                     <div class="toolbar-left">
-                        <button class="toolbar-btn" onclick="prevPage()" id="prevBtn">Previous</button>
+                        <button class="toolbar-btn" onclick="prevPage()" id="prevBtn">← Previous</button>
                         <div class="page-info">
                             <input type="number" class="page-input" id="pageInput" value="1" min="1" onchange="goToPage()">
                             <span>/ <span id="totalPages">0</span></span>
                         </div>
-                        <button class="toolbar-btn" onclick="nextPage()" id="nextBtn">Next</button>
+                        <button class="toolbar-btn" onclick="nextPage()" id="nextBtn">Next →</button>
                     </div>
                     <div class="toolbar-right">
                         <div class="zoom-control">
@@ -506,7 +437,7 @@
                             <span id="zoomLevel">100%</span>
                             <button class="toolbar-btn" onclick="zoomIn()">+</button>
                         </div>
-                        <button class="toolbar-btn" onclick="toggleFullscreen()" id="fullscreenBtn">Fullscreen</button>
+                        <button class="toolbar-btn" onclick="toggleFullscreen()" id="fullscreenBtn">⛶ Fullscreen</button>
                     </div>
                 </div>
                 <div class="pdf-viewer" id="pdfViewer">
@@ -541,56 +472,58 @@
         </div>
     </div>
 
-    <div class="modal" id="addFolderModal" onclick="if(event.target === this) closeAddFolderModal()">
-        <div class="modal-content">
-            <div class="modal-header">
-                New Folder
-                <button style="float: right; background: none; border: none; font-size: 24px; cursor: pointer; color: #999;" onclick="closeAddFolderModal()">×</button>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Folder Name</label>
-                <input type="text" class="form-input" id="folderName" placeholder="Enter folder name">
-            </div>
-            <div class="modal-buttons">
-                <button class="btn btn-secondary" onclick="closeAddFolderModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="addFolder()">Create Folder</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="modal" id="renameFolderModal" onclick="if(event.target === this) closeRenameFolderModal()">
-        <div class="modal-content">
-            <div class="modal-header">
-                Rename Folder
-                <button style="float: right; background: none; border: none; font-size: 24px; cursor: pointer; color: #999;" onclick="closeRenameFolderModal()">×</button>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Folder Name</label>
-                <input type="text" class="form-input" id="renameFolderName" placeholder="Enter new folder name">
-            </div>
-            <div class="modal-buttons">
-                <button class="btn btn-secondary" onclick="closeRenameFolderModal()">Cancel</button>
-                <button class="btn btn-primary" onclick="confirmRenameFolder()">Rename</button>
-            </div>
-        </div>
-    </div>
-
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        let library = JSON.parse(localStorage.getItem('pdfLibrary') || '[]');
-        let folders = JSON.parse(localStorage.getItem('pdfFolders') || '[]');
-        let currentFolderId = null;
+        // ----- Folder-based library structure -----
+        let library = JSON.parse(localStorage.getItem('pdfLibrary') || 'null');
+
+        if (!library) {
+            library = {
+                folders: [
+                    {
+                        id: 'root',
+                        name: 'All Books',
+                        color: '#667eea',
+                        icon: '📁',
+                        books: [],
+                        subfolders: []
+                    }
+                ],
+                activeFolderId: 'root'
+            };
+            localStorage.setItem('pdfLibrary', JSON.stringify(library));
+        }
+
         let currentPdf = null;
         let currentPage = 1;
         let totalPages = 0;
         let scale = 1.5;
         let pdfDoc = null;
         let currentPdfId = null;
-        let renamingFolderId = null;
 
-        let dragStartItem = null;
-        let isDragging = false;
+        function saveLibrary() {
+            localStorage.setItem('pdfLibrary', JSON.stringify(library));
+        }
+
+        function findFolderById(folderId, folder = library.folders[0]) {
+            if (folder.id === folderId) return folder;
+            for (const sub of folder.subfolders) {
+                const found = findFolderById(folderId, sub);
+                if (found) return found;
+            }
+            return null;
+        }
+
+        function findBookById(bookId, folder = library.folders[0]) {
+            const book = folder.books.find(b => b.id === bookId);
+            if (book) return { book, folder };
+            for (const sub of folder.subfolders) {
+                const found = findBookById(bookId, sub);
+                if (found) return found;
+            }
+            return null;
+        }
 
         function updateZoomDisplay() {
             document.getElementById('zoomLevel').textContent = Math.round((scale / 1.5) * 100) + '%';
@@ -598,275 +531,107 @@
 
         function renderLibrary() {
             const list = document.getElementById('libraryList');
-            const breadcrumb = document.getElementById('breadcrumb');
-            
-            const path = getFolderPath(currentFolderId);
-            breadcrumb.innerHTML = path.map((folder, idx) => {
-                const isLast = idx === path.length - 1;
-                return `
-                    <span class="breadcrumb-item" onclick="navigateToFolder('${folder.id || 'root'}')">${folder.name}</span>
-                    ${!isLast ? '<span>></span>' : ''}
-                `;
-            }).join('');
-            
-            const currentFolders = folders.filter(f => (f.parentId || 'root') === (currentFolderId || 'root'));
-            const currentPdfs = library.filter(p => (p.folderId || 'root') === (currentFolderId || 'root'));
-            
-            if (currentFolders.length === 0 && currentPdfs.length === 0) {
-                list.innerHTML = '<div class="empty-state"><div class="empty-state-icon"></div><p>This folder is empty</p></div>';
+            const rootFolder = library.folders[0];
+
+            if (!rootFolder || (rootFolder.books.length === 0 && rootFolder.subfolders.length === 0)) {
+                list.innerHTML = '<div class="empty-state"><div class="empty-state-icon"></div><p>Your library is empty</p></div>';
                 return;
             }
-            
-            let html = '';
-            
-            currentFolders.forEach((folder) => {
-                const itemCount = countItemsInFolder(folder.id);
-                html += `
-                    <div class="folder-item" data-folder-id="${folder.id}" data-item-type="folder">
-                        <div class="folder-header">
-                            <span class="folder-icon">▶</span>
-                            <span class="folder-title" ondblclick="navigateToFolder('${folder.id}')">${folder.name}</span>
-                            <span class="folder-count">(${itemCount})</span>
-                            <div class="folder-actions">
-                                <button class="folder-btn" onclick="event.stopPropagation(); openRenameFolder('${folder.id}')">Edit</button>
-                                <button class="folder-btn" onclick="event.stopPropagation(); deleteFolder('${folder.id}')">Delete</button>
-                            </div>
+
+            function renderFolder(folder, level = 0) {
+                const isActiveFolder = library.activeFolderId === folder.id;
+
+                let html = `
+                    <div class="library-folder" data-folder-id="${folder.id}" style="margin-left:${level * 12}px">
+                        <div class="library-item ${isActiveFolder ? 'active' : ''}" onclick="setActiveFolder('${folder.id}')">
+                            <div class="library-item-title">${folder.icon || '📁'} ${folder.name}</div>
+                            <div class="library-item-progress">${folder.books.length} books</div>
+                        </div>
+                        <div class="folder-actions">
+                            <button class="delete-btn" onclick="event.stopPropagation(); renameFolderPrompt('${folder.id}')">Rename</button>
+                            <button class="delete-btn" onclick="event.stopPropagation(); addSubfolderPrompt('${folder.id}')">+ Folder</button>
+                            ${folder.id !== 'root' ? `<button class="delete-btn" onclick="event.stopPropagation(); deleteFolder('${folder.id}')">Delete</button>` : ''}
                         </div>
                     </div>
                 `;
-            });
-            
-            currentPdfs.forEach((item) => {
-                html += `
-                    <div class="library-item ${currentPdfId === item.id ? 'active' : ''}"
-                         data-pdf-id="${item.id}" data-item-type="pdf">
-                        <div onclick="loadPdfFromLibrary('${item.id}')">
+
+                if (isActiveFolder && folder.books.length) {
+                    html += folder.books.map((item) => `
+                        <div class="library-item ${currentPdfId === item.id ? 'active' : ''}"
+                             data-book-id="${item.id}" style="margin-left:${(level + 1) * 12}px"
+                             onclick="loadPdfById('${item.id}')">
                             <div class="library-item-title">${item.name}</div>
-                            <div class="library-item-progress">Page ${item.currentPage} of ${item.totalPages}</div>
+                            <div class="library-item-progress">Page ${item.currentPage} of ${item.totalPages || 0}</div>
                             <div class="progress-bar">
-                                <div class="progress-fill" style="width: ${(item.currentPage / item.totalPages * 100)}%"></div>
+                                <div class="progress-fill" style="width: ${item.totalPages ? (item.currentPage / item.totalPages * 100) : 0}%"></div>
                             </div>
+                            <button class="delete-btn" onclick="event.stopPropagation(); deletePdfById('${item.id}')">Delete</button>
                         </div>
-                        <button class="delete-btn" onclick="event.stopPropagation(); deletePdf('${item.id}')">Delete</button>
-                    </div>
-                `;
-            });
-            
-            list.innerHTML = html;
-            attachDragHandlers();
-        }
-
-        function countItemsInFolder(folderId) {
-            let count = library.filter(p => p.folderId === folderId).length;
-            const subfolders = folders.filter(f => f.parentId === folderId);
-            subfolders.forEach(sf => {
-                count += countItemsInFolder(sf.id);
-            });
-            return count;
-        }
-
-        function getFolderPath(folderId) {
-            const path = [{ id: null, name: 'Library' }];
-            let currentId = folderId;
-            
-            while (currentId) {
-                const folder = folders.find(f => f.id === currentId);
-                if (folder) {
-                    path.splice(1, 0, folder);
-                    currentId = folder.parentId;
-                } else {
-                    break;
+                    `).join('');
                 }
+
+                for (const sub of folder.subfolders) {
+                    html += renderFolder(sub, level + 1);
+                }
+
+                return html;
             }
-            
-            return path;
+
+            list.innerHTML = renderFolder(rootFolder);
         }
 
-        function navigateToFolder(folderId) {
-            currentFolderId = folderId === 'root' ? null : folderId;
+        function setActiveFolder(folderId) {
+            library.activeFolderId = folderId;
+            saveLibrary();
             renderLibrary();
         }
 
-        function attachDragHandlers() {
-            const items = document.querySelectorAll('.library-item, .folder-item');
-            items.forEach(item => {
-                item.onmousedown = function(e) {
-                    if (e.button !== 0 || e.target.tagName === 'BUTTON' || e.target.classList.contains('folder-btn')) return;
-
-                    isDragging = true;
-                    dragStartItem = {
-                        element: this,
-                        type: this.getAttribute('data-item-type'),
-                        id: this.getAttribute('data-item-type') === 'folder' ? 
-                            this.getAttribute('data-folder-id') : 
-                            this.getAttribute('data-pdf-id')
-                    };
-                    this.classList.add('dragging');
-
-                    function onMouseMove(ev) {
-                        if (!isDragging) return;
-                        const el = document.elementFromPoint(ev.clientX, ev.clientY);
-                        if (!el) return;
-                        
-                        document.querySelectorAll('.drag-over').forEach(i => i.classList.remove('drag-over'));
-                        
-                        const targetFolder = el.closest('.folder-item');
-                        if (targetFolder && targetFolder !== dragStartItem.element) {
-                            targetFolder.classList.add('drag-over');
-                        }
-                    }
-
-                    function onMouseUp(ev) {
-                        document.removeEventListener('mousemove', onMouseMove);
-                        document.removeEventListener('mouseup', onMouseUp);
-
-                        if (!isDragging) return;
-                        isDragging = false;
-
-                        dragStartItem.element.classList.remove('dragging');
-                        document.querySelectorAll('.drag-over').forEach(i => i.classList.remove('drag-over'));
-
-                        const el = document.elementFromPoint(ev.clientX, ev.clientY);
-                        if (el) {
-                            const targetFolder = el.closest('.folder-item');
-                            if (targetFolder && targetFolder !== dragStartItem.element) {
-                                const targetFolderId = targetFolder.getAttribute('data-folder-id');
-                                moveItemToFolder(dragStartItem.type, dragStartItem.id, targetFolderId);
-                            }
-                        }
-
-                        dragStartItem = null;
-                    }
-
-                    document.addEventListener('mousemove', onMouseMove);
-                    document.addEventListener('mouseup', onMouseUp);
-                };
+        function addSubfolderPrompt(parentId) {
+            const name = prompt('New folder name:');
+            if (!name) return;
+            const parent = findFolderById(parentId);
+            if (!parent) return;
+            parent.subfolders.push({
+                id: 'fld_' + Date.now() + '_' + Math.random().toString(36).slice(2),
+                name,
+                color: '#764ba2',
+                icon: '📂',
+                books: [],
+                subfolders: []
             });
-        }
-
-        function moveItemToFolder(itemType, itemId, targetFolderId) {
-            if (itemType === 'pdf') {
-                const pdf = library.find(p => p.id === itemId);
-                if (pdf) {
-                    pdf.folderId = targetFolderId;
-                    localStorage.setItem('pdfLibrary', JSON.stringify(library));
-                }
-            } else if (itemType === 'folder') {
-                if (!isDescendantFolder(targetFolderId, itemId)) {
-                    const folder = folders.find(f => f.id === itemId);
-                    if (folder) {
-                        folder.parentId = targetFolderId;
-                        localStorage.setItem('pdfFolders', JSON.stringify(folders));
-                    }
-                }
-            }
+            saveLibrary();
             renderLibrary();
         }
 
-        function isDescendantFolder(checkId, ancestorId) {
-            let currentId = checkId;
-            while (currentId) {
-                if (currentId === ancestorId) return true;
-                const folder = folders.find(f => f.id === currentId);
-                currentId = folder ? folder.parentId : null;
-            }
-            return false;
-        }
-
-        function openAddFolderModal() {
-            document.getElementById('addFolderModal').classList.add('active');
-            document.getElementById('folderName').value = '';
-        }
-
-        function closeAddFolderModal() {
-            document.getElementById('addFolderModal').classList.remove('active');
-        }
-
-        function addFolder() {
-            const name = document.getElementById('folderName').value.trim();
-            
-            if (!name) {
-                alert('Please enter a folder name');
-                return;
-            }
-
-            const folder = {
-                id: 'folder_' + Date.now(),
-                name: name,
-                parentId: currentFolderId,
-                createdDate: new Date().toISOString()
-            };
-            
-            folders.push(folder);
-            localStorage.setItem('pdfFolders', JSON.stringify(folders));
+        function renameFolderPrompt(folderId) {
+            const folder = findFolderById(folderId);
+            if (!folder) return;
+            const name = prompt('Rename folder:', folder.name);
+            if (!name) return;
+            folder.name = name.trim();
+            saveLibrary();
             renderLibrary();
-            closeAddFolderModal();
-        }
-
-        function openRenameFolder(folderId) {
-            renamingFolderId = folderId;
-            const folder = folders.find(f => f.id === folderId);
-            if (folder) {
-                document.getElementById('renameFolderName').value = folder.name;
-                document.getElementById('renameFolderModal').classList.add('active');
-            }
-        }
-
-        function closeRenameFolderModal() {
-            document.getElementById('renameFolderModal').classList.remove('active');
-            renamingFolderId = null;
-        }
-
-        function confirmRenameFolder() {
-            const newName = document.getElementById('renameFolderName').value.trim();
-            
-            if (!newName) {
-                alert('Please enter a folder name');
-                return;
-            }
-
-            const folder = folders.find(f => f.id === renamingFolderId);
-            if (folder) {
-                folder.name = newName;
-                localStorage.setItem('pdfFolders', JSON.stringify(folders));
-                renderLibrary();
-            }
-            
-            closeRenameFolderModal();
         }
 
         function deleteFolder(folderId) {
-            const folder = folders.find(f => f.id === folderId);
-            if (!folder) return;
-            
-            const itemCount = library.filter(p => p.folderId === folderId).length;
-            const subfolderCount = folders.filter(f => f.parentId === folderId).length;
-            
-            let message = `Are you sure you want to delete "${folder.name}"?`;
-            if (itemCount > 0 || subfolderCount > 0) {
-                message += `\n\nThis folder contains ${itemCount} PDF(s) and ${subfolderCount} subfolder(s). All items will be moved to the parent folder.`;
+            if (!confirm('Delete this folder and all books inside it?')) return;
+            function removeFolder(targetId, folder = library.folders[0]) {
+                const idx = folder.subfolders.findIndex(f => f.id === targetId);
+                if (idx !== -1) {
+                    folder.subfolders.splice(idx, 1);
+                    return true;
+                }
+                for (const sub of folder.subfolders) {
+                    if (removeFolder(targetId, sub)) return true;
+                }
+                return false;
             }
-            
-            if (confirm(message)) {
-                library.forEach(pdf => {
-                    if (pdf.folderId === folderId) {
-                        pdf.folderId = folder.parentId;
-                    }
-                });
-                
-                folders.forEach(f => {
-                    if (f.parentId === folderId) {
-                        f.parentId = folder.parentId;
-                    }
-                });
-                
-                const folderIndex = folders.findIndex(f => f.id === folderId);
-                folders.splice(folderIndex, 1);
-                
-                localStorage.setItem('pdfLibrary', JSON.stringify(library));
-                localStorage.setItem('pdfFolders', JSON.stringify(folders));
-                renderLibrary();
+            removeFolder(folderId);
+            if (library.activeFolderId === folderId) {
+                library.activeFolderId = 'root';
             }
+            saveLibrary();
+            renderLibrary();
         }
 
         function openAddModal() {
@@ -921,7 +686,6 @@
                         break;
                     } catch (err) {
                         lastError = err;
-                        console.warn(`Failed with proxy: ${proxyUrl}`, err);
                         continue;
                     }
                 }
@@ -931,21 +695,21 @@
                 }
                 
                 const pdfItem = {
-                    id: Date.now(),
+                    id: 'bk_' + Date.now() + '_' + Math.random().toString(36).slice(2),
                     name: name,
                     url: url,
                     currentPage: 1,
                     totalPages: pdf.numPages,
                     scale: 1.5,
-                    folderId: currentFolderId,
                     addedDate: new Date().toISOString()
                 };
                 
-                library.push(pdfItem);
-                localStorage.setItem('pdfLibrary', JSON.stringify(library));
+                const activeFolder = findFolderById(library.activeFolderId) || library.folders[0];
+                activeFolder.books.push(pdfItem);
+                saveLibrary();
                 renderLibrary();
                 closeAddModal();
-                await loadPdfFromLibrary(pdfItem.id);
+                await loadPdfById(pdfItem.id);
             } catch (error) {
                 alert('Failed to load PDF. The URL might be invalid or the PDF might be protected. Error: ' + error.message);
                 console.error(error);
@@ -955,30 +719,38 @@
             }
         }
 
-        function deletePdf(pdfId) {
+        function deletePdfById(bookId) {
             if (confirm('Are you sure you want to delete this PDF from your library?')) {
-                const index = library.findIndex(p => p.id === pdfId);
-                if (index !== -1) {
-                    library.splice(index, 1);
-                    localStorage.setItem('pdfLibrary', JSON.stringify(library));
-                    renderLibrary();
-                    if (library.length === 0) {
-                        document.getElementById('pdfViewer').innerHTML = `
-                            <div class="empty-state">
-                                <div class="empty-state-icon"></div>
-                                <h3>No PDF Loaded</h3>
-                                <p>Click "Add PDF" to load a document from URL</p>
-                            </div>
-                        `;
+                function removeBook(bookId, folder = library.folders[0]) {
+                    const idx = folder.books.findIndex(b => b.id === bookId);
+                    if (idx !== -1) {
+                        folder.books.splice(idx, 1);
+                        return true;
                     }
+                    for (const sub of folder.subfolders) {
+                        if (removeBook(bookId, sub)) return true;
+                    }
+                    return false;
+                }
+                removeBook(bookId);
+                saveLibrary();
+                renderLibrary();
+                if (!library.folders[0].books.length && !library.folders[0].subfolders.length) {
+                    document.getElementById('pdfViewer').innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">Empty</div>
+                            <h3>No PDF Loaded</h3>
+                            <p>Click "Add PDF" to load a document from URL</p>
+                        </div>
+                    `;
                 }
             }
         }
 
-        async function loadPdfFromLibrary(pdfId) {
-            const item = library.find(p => p.id === pdfId);
-            if (!item) return;
-            
+        async function loadPdfById(bookId) {
+            const found = findBookById(bookId);
+            if (!found) return;
+            const item = found.book;
             currentPdfId = item.id;
             
             const viewer = document.getElementById('pdfViewer');
@@ -1012,7 +784,6 @@
                         break;
                     } catch (err) {
                         lastError = err;
-                        console.warn(`Failed to load with: ${proxyUrl}`, err);
                         continue;
                     }
                 }
@@ -1023,7 +794,7 @@
 
                 pdfDoc = pdf;
                 totalPages = pdfDoc.numPages;
-                currentPage = item.currentPage;
+                currentPage = item.currentPage || 1;
                 scale = item.scale || 1.5;
                 
                 document.getElementById('totalPages').textContent = totalPages;
@@ -1071,11 +842,11 @@
 
         function updateProgress() {
             if (currentPdfId) {
-                const item = library.find(p => p.id === currentPdfId);
-                if (item) {
-                    item.currentPage = currentPage;
-                    item.scale = scale;
-                    localStorage.setItem('pdfLibrary', JSON.stringify(library));
+                const found = findBookById(currentPdfId);
+                if (found) {
+                    found.book.currentPage = currentPage;
+                    found.book.scale = scale;
+                    saveLibrary();
                     renderLibrary();
                 }
             }
@@ -1092,7 +863,6 @@
             
             function renderOutline(items, level = 0) {
                 return items.map(item => {
-                    const pageNum = item.dest ? (Array.isArray(item.dest) ? item.dest[0] : null) : null;
                     return `
                         <div class="toc-item" style="padding-left: ${level * 20 + 10}px" onclick="goToTocPage('${item.dest}')">
                             ${item.title}
@@ -1181,13 +951,13 @@
             
             if (!document.fullscreenElement) {
                 container.requestFullscreen().then(() => {
-                    btn.textContent = 'Exit Fullscreen';
+                    btn.textContent = '⛶ Exit Fullscreen';
                 }).catch(err => {
                     alert('Error attempting to enable fullscreen: ' + err.message);
                 });
             } else {
                 document.exitFullscreen().then(() => {
-                    btn.textContent = 'Fullscreen';
+                    btn.textContent = '⛶ Fullscreen';
                 });
             }
         }
@@ -1195,11 +965,12 @@
         document.addEventListener('fullscreenchange', () => {
             const btn = document.getElementById('fullscreenBtn');
             if (!document.fullscreenElement) {
-                btn.textContent = 'Fullscreen';
+                btn.textContent = '⛶ Fullscreen';
             }
         });
 
         renderLibrary();
+        updateZoomDisplay();
     </script>
 </body>
 </html>
