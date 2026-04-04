@@ -17,7 +17,7 @@
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
             background: white;
             border-radius: 20px;
@@ -38,7 +38,6 @@
         }
 
         .header h1 { font-size: 28px; font-weight: 600; }
-
         .header-buttons { display: flex; gap: 10px; }
 
         .btn {
@@ -55,6 +54,9 @@
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
         .btn-secondary { background: rgba(255,255,255,0.2); color: white; border: 1px solid white; }
         .btn-secondary:hover { background: rgba(255,255,255,0.3); }
+        .btn-dict { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.4); }
+        .btn-dict:hover { background: rgba(255,255,255,0.25); }
+        .btn-dict.dict-active { background: white; color: #764ba2; }
 
         .main-content { display: flex; flex: 1; overflow: hidden; }
 
@@ -184,7 +186,7 @@
         }
         .toc-item:hover { background: #e9ecef; }
 
-        .viewer-container { flex: 1; display: flex; flex-direction: column; background: #525659; }
+        .viewer-container { flex: 1; display: flex; flex-direction: column; background: #525659; min-width: 0; }
 
         .toolbar {
             background: #2c3034;
@@ -232,7 +234,6 @@
 
         .pdf-canvas-container { background: white; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
 
-        /* Loading skeleton shimmer */
         .loading-skeleton {
             background: white;
             box-shadow: 0 5px 20px rgba(0,0,0,0.3);
@@ -249,7 +250,6 @@
         }
         @keyframes shimmer { to { left: 100%; } }
 
-        /* Loading bar at top */
         .load-bar {
             position: fixed;
             top: 0; left: 0;
@@ -314,7 +314,6 @@
         }
         .delete-btn:hover { background: #c82333; }
 
-        /* Cache indicator badge */
         .cache-badge {
             display: inline-block;
             font-size: 9px;
@@ -332,6 +331,185 @@
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #888; border-radius: 5px; }
         ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        /*  DICTIONARY PANEL  */
+        .dict-panel {
+            width: 0;
+            min-width: 0;
+            background: #fafafa;
+            border-left: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: width 0.3s ease, min-width 0.3s ease;
+            flex-shrink: 0;
+        }
+        .dict-panel.open {
+            width: 360px;
+            min-width: 320px;
+        }
+        .dict-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .dict-header-title { font-size: 15px; font-weight: 600; flex: 1; }
+        .dict-close-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 16px;
+            line-height: 1;
+        }
+        .dict-close-btn:hover { background: rgba(255,255,255,0.35); }
+        .dict-search-wrap {
+            padding: 14px 16px;
+            border-bottom: 1px solid #e0e0e0;
+            flex-shrink: 0;
+            display: flex;
+            gap: 8px;
+        }
+        .dict-input {
+            flex: 1;
+            padding: 9px 12px;
+            border: 1.5px solid #d0d0d0;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .dict-input:focus { border-color: #667eea; }
+        .dict-lookup-btn {
+            padding: 9px 14px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .dict-lookup-btn:hover { opacity: 0.9; }
+        .dict-body { flex: 1; overflow-y: auto; padding: 16px; }
+        .dict-empty { text-align: center; padding: 40px 20px; color: #999; }
+        .dict-empty-icon { font-size: 36px; margin-bottom: 12px; color: #ccc; }
+        .dict-word-heading { font-size: 22px; font-weight: 700; color: #222; margin-bottom: 2px; }
+        .dict-phonetic { font-size: 14px; color: #764ba2; font-style: italic; margin-bottom: 10px; }
+        .dict-audio-btn {
+            background: none;
+            border: 1.5px solid #764ba2;
+            color: #764ba2;
+            border-radius: 6px;
+            padding: 3px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        .dict-audio-btn:hover { background: #f0eaff; }
+        .dict-section { margin-bottom: 16px; }
+        .dict-pos-badge {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 600;
+            background: #ede9fe;
+            color: #5b21b6;
+            padding: 2px 9px;
+            border-radius: 999px;
+            margin-bottom: 8px;
+            letter-spacing: 0.4px;
+        }
+        .dict-definition {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 6px;
+            padding-left: 12px;
+            border-left: 3px solid #c4b5fd;
+        }
+        .dict-example {
+            font-size: 13px;
+            color: #666;
+            font-style: italic;
+            padding-left: 12px;
+            margin-top: 2px;
+            margin-bottom: 8px;
+        }
+        .dict-divider { height: 1px; background: #eee; margin: 12px 0; }
+        .dict-meta-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+        .dict-synonyms { display: flex; flex-wrap: wrap; gap: 6px; }
+        .dict-syn-pill {
+            font-size: 12px;
+            background: #f0f4ff;
+            color: #667eea;
+            border: 1px solid #c7d2fe;
+            border-radius: 999px;
+            padding: 3px 10px;
+            cursor: pointer;
+        }
+        .dict-syn-pill:hover { background: #e0e7ff; }
+        .dict-error {
+            color: #c0392b;
+            font-size: 14px;
+            padding: 12px;
+            background: #fef2f2;
+            border-radius: 8px;
+            border: 1px solid #fecaca;
+            margin-bottom: 14px;
+        }
+        .dict-loading { text-align: center; padding: 30px; color: #667eea; font-size: 14px; }
+        .dict-spinner {
+            display: inline-block;
+            width: 20px; height: 20px;
+            border: 2px solid #e0e0e0;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            margin-bottom: 8px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .dict-history { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+        .dict-hist-pill {
+            font-size: 11px;
+            background: #f3f4f6;
+            color: #555;
+            border: 1px solid #d1d5db;
+            border-radius: 999px;
+            padding: 2px 8px;
+            cursor: pointer;
+        }
+        .dict-hist-pill:hover { background: #e5e7eb; }
+        .dict-origin {
+            font-size: 13px;
+            color: #555;
+            font-style: italic;
+            background: #f8f8ff;
+            border-left: 3px solid #a5b4fc;
+            padding: 8px 10px;
+            border-radius: 0 6px 6px 0;
+            margin-top: 4px;
+        }
+        .dict-source {
+            margin-top: 14px;
+            font-size: 11px;
+            color: #bbb;
+        }
+        .dict-source a { color: #bbb; }
     </style>
 </head>
 <body>
@@ -342,7 +520,8 @@
         <h1>Continua | PDF Reader PRO</h1>
         <div class="header-buttons">
             <button class="btn btn-primary" onclick="openAddModal()">+ Add PDF</button>
-            <button class="btn btn-secondary" onclick="toggleSidebar()">☰ Menu</button>
+            <button class="btn btn-dict" id="dictToggleBtn" onclick="toggleDictPanel()">Dictionary</button>
+            <button class="btn btn-secondary" onclick="toggleSidebar()">Menu</button>
         </div>
     </div>
 
@@ -356,8 +535,8 @@
                 <div class="folder-bar">
                     <select id="folderSelect" class="folder-select" onchange="changeFolder()"></select>
                     <button class="folder-pill" onclick="addFolder()">+F</button>
-                    <button class="folder-pill" onclick="renameFolder()">✎</button>
-                    <button class="folder-pill" onclick="deleteFolder()">🗑</button>
+                    <button class="folder-pill" onclick="renameFolder()">Rename</button>
+                    <button class="folder-pill" onclick="deleteFolder()">Del</button>
                 </div>
                 <div id="folderPalette"></div>
                 <div id="libraryList"></div>
@@ -370,12 +549,12 @@
         <div class="viewer-container">
             <div class="toolbar">
                 <div class="toolbar-left">
-                    <button class="toolbar-btn" onclick="prevPage()" id="prevBtn">← Previous</button>
+                    <button class="toolbar-btn" onclick="prevPage()" id="prevBtn">&#8592; Previous</button>
                     <div class="page-info">
                         <input type="number" class="page-input" id="pageInput" value="1" min="1" onchange="goToPage()">
                         <span>/ <span id="totalPages">0</span></span>
                     </div>
-                    <button class="toolbar-btn" onclick="nextPage()" id="nextBtn">Next →</button>
+                    <button class="toolbar-btn" onclick="nextPage()" id="nextBtn">Next &#8594;</button>
                 </div>
                 <div class="toolbar-right">
                     <div class="zoom-control">
@@ -383,7 +562,7 @@
                         <span id="zoomLevel">100%</span>
                         <button class="toolbar-btn" onclick="zoomIn()">+</button>
                     </div>
-                    <button class="toolbar-btn" onclick="toggleFullscreen()" id="fullscreenBtn">⛶ Fullscreen</button>
+                    <button class="toolbar-btn" onclick="toggleFullscreen()" id="fullscreenBtn">Fullscreen</button>
                 </div>
             </div>
             <div class="pdf-viewer" id="pdfViewer">
@@ -394,6 +573,35 @@
                 </div>
             </div>
         </div>
+
+        <!--  DICTIONARY PANEL  -->
+        <div class="dict-panel" id="dictPanel">
+            <div class="dict-header">
+                <span class="dict-header-title">Dictionary</span>
+                <button class="dict-close-btn" onclick="toggleDictPanel()">&#215;</button>
+            </div>
+            <div class="dict-search-wrap">
+                <input
+                    type="text"
+                    class="dict-input"
+                    id="dictInput"
+                    placeholder="Type a word..."
+                    onkeydown="if(event.key==='Enter') lookupWord()"
+                    autocomplete="off"
+                    autocorrect="off"
+                    spellcheck="false"
+                >
+                <button class="dict-lookup-btn" onclick="lookupWord()">Look up</button>
+            </div>
+            <div class="dict-body" id="dictBody">
+                <div class="dict-empty">
+                    <div class="dict-empty-icon">A</div>
+                    <p style="font-size:13px;color:#aaa;line-height:1.6;">
+                        Enter any word to get its full definition, pronunciation, part of speech, etymology, synonyms, antonyms, and example sentences.
+                    </p>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -401,7 +609,7 @@
     <div class="modal-content">
         <div class="modal-header">
             Add PDF Document
-            <button style="float:right;background:none;border:none;font-size:24px;cursor:pointer;color:#999" onclick="closeAddModal()">×</button>
+            <button style="float:right;background:none;border:none;font-size:24px;cursor:pointer;color:#999" onclick="closeAddModal()">&#215;</button>
         </div>
         <div class="form-group">
             <label class="form-label">Document Name</label>
@@ -421,26 +629,23 @@
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-// ─── FEATURE DETECT ───────────────────────────────────────────────────────────
-// FIX: detect OffscreenCanvas support once so renderPage doesn't silently crash
+//  FEATURE DETECT 
 const SUPPORTS_OFFSCREEN = (function() {
     try { return typeof OffscreenCanvas !== 'undefined' && !!new OffscreenCanvas(1,1).getContext('2d'); }
     catch(_) { return false; }
 })();
 
-// ─── SESSION-LEVEL DOC CACHE (pdfDoc objects) ─────────────────────────────────
-const sessionDocCache = new Map(); // bookId → pdfDoc
+//  SESSION-LEVEL DOC CACHE 
+const sessionDocCache = new Map();
 
-// ─── RENDER CACHE ─────────────────────────────────────────────────────────────
-// FIX: Store raw ImageData (not ImageBitmap) so we can repaint without consuming.
-// Key: `${bookId}-${page}-${scale}` → ImageData
+//  RENDER CACHE 
 const renderCache = new Map();
 const RENDER_CACHE_MAX = 20;
 
-// ─── PRELOAD ──────────────────────────────────────────────────────────────────
+//  PRELOAD 
 let preloadTimeout = null;
 
-// ─── PERSISTENT PDF BINARY CACHE (IndexedDB) ─────────────────────────────────
+//  PERSISTENT PDF BINARY CACHE (IndexedDB) 
 const IDB_NAME = 'continua_pdf_cache';
 const IDB_STORE = 'pdfs';
 let idb = null;
@@ -482,7 +687,6 @@ async function idbPut(bookId, arrayBuffer) {
             req.onsuccess = () => resolve(req.result);
             req.onerror = () => resolve([]);
         });
-        // Only evict if at/over limit
         if (all.length >= 20) {
             all.sort((a, b) => a.accessed - b.accessed);
             const toDelete = all.slice(0, all.length - 19);
@@ -543,7 +747,7 @@ async function idbGetCachedIds() {
 let cachedBookIds = new Set();
 openIDB().then(() => idbGetCachedIds().then(ids => { cachedBookIds = ids; renderLibrary(); }));
 
-// ─── STATE ────────────────────────────────────────────────────────────────────
+//  STATE 
 let library = JSON.parse(localStorage.getItem('pdfLibrary') || '[]');
 let currentPage = 1;
 let totalPages = 0;
@@ -557,10 +761,10 @@ let folders = JSON.parse(localStorage.getItem('pdfFolders') || '[]');
 let activeFolder = localStorage.getItem('pdfActiveFolder') || 'All';
 
 if (Array.isArray(folders) && typeof folders[0] === 'string') {
-    folders = folders.map(name => ({ id: 'fld_' + name, name, color: '#e9ecef', icon: '📁' }));
+    folders = folders.map(name => ({ id: 'fld_' + name, name, color: '#e9ecef', icon: '' }));
 }
 if (!folders.length) {
-    folders = [{ id: 'fld_All', name: 'All', color: '#e9ecef', icon: '📁' }];
+    folders = [{ id: 'fld_All', name: 'All', color: '#e9ecef', icon: '' }];
     activeFolder = 'All';
 }
 if (!activeFolder) activeFolder = 'All';
@@ -579,22 +783,21 @@ localStorage.setItem('pdfActiveFolder', activeFolder);
 
 let dragStartIndex = null, dragCurrentIndex = null, isDraggingLibraryItem = false;
 
-// ─── LOAD BAR ─────────────────────────────────────────────────────────────────
+//  LOAD BAR 
 function setLoadBar(pct) {
     const bar = document.getElementById('loadBar');
     bar.style.width = pct + '%';
     if (pct >= 100) setTimeout(() => { bar.style.width = '0'; }, 400);
 }
 
-// ─── FETCH WITH TIMEOUT ───────────────────────────────────────────────────────
-// FIX: Wrap fetch with a timeout so stalled proxies don't hang forever
+//  FETCH WITH TIMEOUT 
 function fetchWithTimeout(url, timeoutMs = 15000) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
 }
 
-// ─── PROXY RACE ───────────────────────────────────────────────────────────────
+//  PROXY RACE 
 function getProxies(url) {
     return [
         url,
@@ -604,8 +807,6 @@ function getProxies(url) {
     ];
 }
 
-// FIX: fetchPdfBytes now has per-request timeout; fallback uses pdfjsLib directly
-// on the SAME proxy list but as a separate last-ditch attempt (not just looping).
 async function fetchPdfBytes(url) {
     const proxies = getProxies(url);
     const racePromises = proxies.map(async proxyUrl => {
@@ -621,7 +822,6 @@ async function fetchPdfBytes(url) {
 async function loadPdfFast(url, bookId) {
     const cMapUrl = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/';
 
-    // Tier 1: Session cache
     if (sessionDocCache.has(bookId)) {
         idbTouch(bookId);
         return sessionDocCache.get(bookId);
@@ -629,7 +829,6 @@ async function loadPdfFast(url, bookId) {
 
     setLoadBar(10);
 
-    // Tier 2: IndexedDB
     const cached = await idbGet(bookId);
     if (cached && cached.data) {
         setLoadBar(50);
@@ -649,14 +848,11 @@ async function loadPdfFast(url, bookId) {
         }
     }
 
-    // Tier 3: Network — fetch raw bytes and parse
     setLoadBar(20);
     let arrayBuffer = null;
     try {
         arrayBuffer = await fetchPdfBytes(url);
     } catch (_) {
-        // fetchPdfBytes fully failed; try pdfjsLib direct URL load as last resort
-        // FIX: This is a genuinely different approach (stream vs bytes), not just retrying same proxies
         setLoadBar(40);
         const proxies = getProxies(url);
         const docPromises = proxies.map(proxyUrl =>
@@ -677,7 +873,6 @@ async function loadPdfFast(url, bookId) {
     const doc = await pdfjsLib.getDocument({ data: arrayBuffer.slice(0), cMapUrl, cMapPacked: true }).promise;
     sessionDocCache.set(bookId, doc);
 
-    // Store in IDB non-blocking
     idbPut(bookId, arrayBuffer).then(() => {
         cachedBookIds.add(String(bookId));
         renderLibrary();
@@ -687,12 +882,7 @@ async function loadPdfFast(url, bookId) {
     return doc;
 }
 
-// ─── PAGE RENDER ──────────────────────────────────────────────────────────────
-// FIX 1: Store ImageData in renderCache instead of ImageBitmap.
-//         ImageBitmap is neutered after transferFromImageBitmap; ImageData is plain data you can reuse.
-// FIX 2: OffscreenCanvas support is checked up-front via SUPPORTS_OFFSCREEN.
-// FIX 3: renderInProgress flag is reset correctly even when fallback is used.
-
+//  PAGE RENDER 
 async function renderPage(pageNum) {
     if (!pdfDoc) return;
 
@@ -712,7 +902,6 @@ async function renderPage(pageNum) {
             const page = await pdfDoc.getPage(pageNum);
             const viewport = page.getViewport({ scale });
 
-            // Show skeleton while rendering
             viewer.innerHTML = '';
             const skeleton = document.createElement('div');
             skeleton.className = 'loading-skeleton';
@@ -721,16 +910,13 @@ async function renderPage(pageNum) {
             viewer.appendChild(skeleton);
 
             if (SUPPORTS_OFFSCREEN) {
-                // Render off-screen for performance
                 const offCanvas = new OffscreenCanvas(viewport.width, viewport.height);
                 const ctx = offCanvas.getContext('2d');
                 await page.render({ canvasContext: ctx, viewport }).promise;
-                // FIX: Read back as ImageData (reusable) instead of ImageBitmap (consumed on transfer)
                 const imageData = ctx.getImageData(0, 0, viewport.width, viewport.height);
                 evictRenderCache();
                 renderCache.set(cacheKey, { imageData, width: viewport.width, height: viewport.height });
             } else {
-                // Fallback: render to a regular canvas and read back ImageData
                 const tmpCanvas = document.createElement('canvas');
                 tmpCanvas.width = viewport.width;
                 tmpCanvas.height = viewport.height;
@@ -742,7 +928,6 @@ async function renderPage(pageNum) {
             }
         }
 
-        // Paint from cache onto a fresh canvas
         const { imageData, width, height } = renderCache.get(cacheKey);
         const canvas = document.createElement('canvas');
         canvas.width = width;
@@ -763,9 +948,8 @@ async function renderPage(pageNum) {
     } catch (e) {
         console.error('renderPage error:', e);
         document.getElementById('pdfViewer').innerHTML =
-            `<div class="empty-state"><div class="empty-state-icon">⚠️</div><h3>Render Error</h3><p>${e.message}</p></div>`;
+            `<div class="empty-state"><div class="empty-state-icon">!</div><h3>Render Error</h3><p>${e.message}</p></div>`;
     } finally {
-        // FIX: Always reset the flag, even on error
         renderInProgress = false;
         if (pendingRender !== null) {
             const next = pendingRender;
@@ -781,7 +965,6 @@ function evictRenderCache() {
     }
 }
 
-// Preload adjacent pages into renderCache
 function schedulePreload(currentPageNum) {
     if (preloadTimeout) clearTimeout(preloadTimeout);
     preloadTimeout = setTimeout(async () => {
@@ -811,13 +994,13 @@ function schedulePreload(currentPageNum) {
                         evictRenderCache();
                         renderCache.set(key, { imageData, width: viewport.width, height: viewport.height });
                     }
-                } catch (_) { /* silent — preload is best-effort */ }
+                } catch (_) {}
             }
         }
     }, 300);
 }
 
-// ─── LIBRARY LOADING ──────────────────────────────────────────────────────────
+//  LIBRARY LOADING 
 async function loadPdfFromLibrary(index) {
     const item = library[index];
     currentPdfId = item.id;
@@ -841,13 +1024,13 @@ async function loadPdfFromLibrary(index) {
         renderLibrary();
 
     } catch (error) {
-        viewer.innerHTML = `<div class="empty-state"><div class="empty-state-icon">⚠️</div><h3>Failed to Load PDF</h3><p>${error.message}</p></div>`;
+        viewer.innerHTML = `<div class="empty-state"><div class="empty-state-icon">!</div><h3>Failed to Load PDF</h3><p>${error.message}</p></div>`;
         setLoadBar(0);
         console.error(error);
     }
 }
 
-// ─── ADD PDF ──────────────────────────────────────────────────────────────────
+//  ADD PDF 
 async function addPdf() {
     const name = document.getElementById('pdfName').value.trim();
     const url = document.getElementById('pdfUrl').value.trim();
@@ -887,7 +1070,7 @@ async function addPdf() {
     }
 }
 
-// ─── NAVIGATION ───────────────────────────────────────────────────────────────
+//  NAVIGATION 
 async function nextPage() {
     if (currentPage < totalPages) await renderPage(currentPage + 1);
 }
@@ -901,7 +1084,7 @@ async function goToPage() {
     if (pageNum >= 1 && pageNum <= totalPages) await renderPage(pageNum);
 }
 
-// ─── ZOOM ─────────────────────────────────────────────────────────────────────
+//  ZOOM 
 function clearRenderCacheForCurrentBook() {
     for (const key of [...renderCache.keys()]) {
         if (key.startsWith(`${currentPdfId}-`)) renderCache.delete(key);
@@ -928,7 +1111,7 @@ function updateZoomDisplay() {
     document.getElementById('zoomLevel').textContent = Math.round((scale / 1.5) * 100) + '%';
 }
 
-// ─── PROGRESS ─────────────────────────────────────────────────────────────────
+//  PROGRESS 
 function updateProgress() {
     if (currentPdfId) {
         const index = library.findIndex(i => i.id === currentPdfId);
@@ -941,7 +1124,7 @@ function updateProgress() {
     }
 }
 
-// ─── TABLE OF CONTENTS ────────────────────────────────────────────────────────
+//  TABLE OF CONTENTS 
 async function loadTableOfContents() {
     const outline = await pdfDoc.getOutline();
     const tocList = document.getElementById('tocList');
@@ -971,7 +1154,7 @@ async function goToTocPage(dest) {
     } catch (e) { console.error(e); }
 }
 
-// ─── FOLDERS ──────────────────────────────────────────────────────────────────
+//  FOLDERS 
 function saveFolders() {
     localStorage.setItem('pdfFolders', JSON.stringify(folders));
     localStorage.setItem('pdfActiveFolder', activeFolder);
@@ -981,16 +1164,16 @@ function renderFolderSelect() {
     const select = document.getElementById('folderSelect');
     const palette = document.getElementById('folderPalette');
     if (!folders.find(f => f.name === 'All')) {
-        folders.unshift({ id: 'fld_All', name: 'All', color: '#e9ecef', icon: '📁' });
+        folders.unshift({ id: 'fld_All', name: 'All', color: '#e9ecef', icon: '' });
     }
     if (select) {
         select.innerHTML = folders.map(f =>
-            `<option value="${f.name}" ${f.name === activeFolder ? 'selected' : ''}>${f.icon || '📁'} ${f.name}</option>`
+            `<option value="${f.name}" ${f.name === activeFolder ? 'selected' : ''}>${f.icon || ''} ${f.name}</option>`
         ).join('');
     }
     if (palette) {
         palette.innerHTML = folders.map(f =>
-            `<div class="folder-pill" data-folder="${f.name}" onclick="changeFolderByPill('${f.name}')">${f.icon || '📁'} ${f.name}</div>`
+            `<div class="folder-pill" data-folder="${f.name}" onclick="changeFolderByPill('${f.name}')">${f.icon || ''} ${f.name}</div>`
         ).join('');
     }
 }
@@ -1011,7 +1194,7 @@ function changeFolder() {
 function addFolder() {
     const name = prompt('New folder name:');
     if (!name || !name.trim() || folders.find(f => f.name === name.trim())) return;
-    folders.push({ id: 'fld_' + Date.now(), name: name.trim(), color: '#e9ecef', icon: '📁' });
+    folders.push({ id: 'fld_' + Date.now(), name: name.trim(), color: '#e9ecef', icon: '' });
     activeFolder = name.trim();
     saveFolders();
     renderFolderSelect();
@@ -1052,7 +1235,7 @@ function deleteFolder() {
     renderLibrary();
 }
 
-// ─── LIBRARY RENDER & DRAG ───────────────────────────────────────────────────
+//  LIBRARY RENDER & DRAG 
 function toggleBookMenu(event, index) {
     event.stopPropagation();
     closeAllBookMenus();
@@ -1093,7 +1276,7 @@ function renderLibrary() {
                     </div>
                 </div>
                 <div class="library-item-right">
-                    <button class="book-menu-btn" onclick="toggleBookMenu(event, ${realIndex})">⋮</button>
+                    <button class="book-menu-btn" onclick="toggleBookMenu(event, ${realIndex})">...</button>
                     <button class="delete-btn" onclick="event.stopPropagation(); deletePdf(${realIndex})">Delete</button>
                     <div class="book-menu-dropdown">
                         <div class="book-menu-item" onclick="addBookToFolder(${realIndex})">Add to folder</div>
@@ -1176,7 +1359,7 @@ function deletePdf(index) {
         renderLibrary();
         if (!library.length) {
             document.getElementById('pdfViewer').innerHTML = `
-                <div class="empty-state"><div class="empty-state-icon">📄</div><h3>No PDF Loaded</h3><p>Click "Add PDF" to load a document from URL</p></div>
+                <div class="empty-state"><div class="empty-state-icon"></div><h3>No PDF Loaded</h3><p>Click "Add PDF" to load a document from URL</p></div>
             `;
         }
     }
@@ -1190,7 +1373,7 @@ function addBookToFolder(index) {
     const trimmed = input.trim();
     let folder = folders.find(f => f.name === trimmed);
     if (!folder) {
-        folder = { id: 'fld_' + Date.now(), name: trimmed, color: '#e9ecef', icon: '📁' };
+        folder = { id: 'fld_' + Date.now(), name: trimmed, color: '#e9ecef', icon: '' };
         folders.push(folder);
         saveFolders();
         renderFolderSelect();
@@ -1220,7 +1403,7 @@ document.addEventListener('click', e => {
     if (!e.target.closest('.library-item-right')) closeAllBookMenus();
 });
 
-// ─── MODALS ───────────────────────────────────────────────────────────────────
+//  MODALS 
 function openAddModal() {
     document.getElementById('addModal').classList.add('active');
     document.getElementById('pdfName').value = '';
@@ -1230,7 +1413,7 @@ function closeAddModal() {
     document.getElementById('addModal').classList.remove('active');
 }
 
-// ─── UI ───────────────────────────────────────────────────────────────────────
+//  UI 
 function switchTab(tab) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
@@ -1252,24 +1435,211 @@ function toggleFullscreen() {
     const container = document.querySelector('.container');
     const btn = document.getElementById('fullscreenBtn');
     if (!document.fullscreenElement) {
-        container.requestFullscreen().then(() => { btn.textContent = '⛶ Exit Fullscreen'; }).catch(err => alert(err.message));
+        container.requestFullscreen().then(() => { btn.textContent = 'Exit Fullscreen'; }).catch(err => alert(err.message));
     } else {
-        document.exitFullscreen().then(() => { btn.textContent = '⛶ Fullscreen'; });
+        document.exitFullscreen().then(() => { btn.textContent = 'Fullscreen'; });
     }
 }
 
 document.addEventListener('fullscreenchange', () => {
-    if (!document.fullscreenElement) document.getElementById('fullscreenBtn').textContent = '⛶ Fullscreen';
+    if (!document.fullscreenElement) document.getElementById('fullscreenBtn').textContent = 'Fullscreen';
 });
 
-// ─── KEYBOARD SHORTCUTS ───────────────────────────────────────────────────────
+//  KEYBOARD SHORTCUTS 
 document.addEventListener('keydown', e => {
     if (e.target.tagName === 'INPUT') return;
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextPage();
     if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prevPage();
 });
 
-// ─── INIT ─────────────────────────────────────────────────────────────────────
+// 
+// DICTIONARY PANEL
+// Uses Free Dictionary API (dictionaryapi.dev) — no API key required.
+// Covers the full English vocabulary: common, literary, academic, technical.
+// Fully isolated — touches only its own DOM nodes and localStorage key.
+// 
+
+let dictPanelOpen = false;
+let dictHistory = JSON.parse(localStorage.getItem('dictHistory') || '[]');
+let dictAudioUrls = {};
+
+function toggleDictPanel() {
+    dictPanelOpen = !dictPanelOpen;
+    const panel = document.getElementById('dictPanel');
+    const btn   = document.getElementById('dictToggleBtn');
+    panel.classList.toggle('open', dictPanelOpen);
+    btn.classList.toggle('dict-active', dictPanelOpen);
+    if (dictPanelOpen) {
+        setTimeout(() => document.getElementById('dictInput').focus(), 320);
+    }
+}
+
+async function lookupWord() {
+    const raw  = document.getElementById('dictInput').value.trim();
+    if (!raw) return;
+    const word = raw.toLowerCase().replace(/[^a-z\-']/g, '');
+    if (!word) return;
+
+    const body = document.getElementById('dictBody');
+    body.innerHTML = `<div class="dict-loading"><div class="dict-spinner"></div><br>Looking up <strong>${escH(raw)}</strong>...</div>`;
+
+    try {
+        const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+        if (!res.ok) throw new Error('not_found');
+        const data = await res.json();
+        if (!Array.isArray(data) || !data.length) throw new Error('not_found');
+        renderDictResult(data, word);
+        addToHistory(word);
+    } catch (e) {
+        if (e.message === 'not_found') {
+            body.innerHTML = `
+                <div class="dict-error">
+                    No results found for <strong>${escH(raw)}</strong>.<br><br>
+                    Check the spelling, or try the base form of the word (e.g. "run" instead of "running").
+                </div>
+                ${renderHistoryHTML()}`;
+        } else {
+            body.innerHTML = `<div class="dict-error">Network error. Check your connection and try again.</div>${renderHistoryHTML()}`;
+        }
+    }
+}
+
+function renderDictResult(entries, word) {
+    const body = document.getElementById('dictBody');
+    dictAudioUrls = {};
+
+    let html = renderHistoryHTML();
+
+    //  Word heading 
+    html += `<div class="dict-word-heading">${escH(entries[0].word || word)}</div>`;
+
+    //  Phonetics + audio 
+    const phonetics     = entries.flatMap(e => e.phonetics || []).filter(p => p.text);
+    const uniquePhonetics = [...new Map(phonetics.map(p => [p.text, p])).values()];
+    if (uniquePhonetics.length) {
+        const ph = uniquePhonetics[0];
+        html += `<div class="dict-phonetic">${escH(ph.text)}`;
+        const audioSrc = entries.flatMap(e => e.phonetics || []).find(p => p.audio)?.audio;
+        if (audioSrc) {
+            const audioId = 'aud_' + word;
+            dictAudioUrls[audioId] = audioSrc;
+            html += `<button class="dict-audio-btn" onclick="playDictAudio('${audioId}')">Play</button>`;
+        }
+        html += `</div>`;
+    }
+
+    //  Meanings grouped by part of speech 
+    const allMeanings = entries.flatMap(e => e.meanings || []);
+    const meaningsByPos = {};
+    allMeanings.forEach(m => {
+        const pos = m.partOfSpeech || 'other';
+        if (!meaningsByPos[pos]) meaningsByPos[pos] = [];
+        meaningsByPos[pos].push(...(m.definitions || []));
+    });
+
+    const posOrder = ['noun','verb','adjective','adverb','pronoun','preposition','conjunction','interjection','other'];
+    const sortedPos = [...new Set([...posOrder.filter(p => meaningsByPos[p]), ...Object.keys(meaningsByPos)])];
+
+    sortedPos.forEach(pos => {
+        const defs = meaningsByPos[pos];
+        if (!defs || !defs.length) return;
+        html += `<div class="dict-section">`;
+        html += `<div class="dict-pos-badge">${escH(pos)}</div>`;
+        defs.slice(0, 6).forEach((def, i) => {
+            html += `<div class="dict-definition"><strong>${i + 1}.</strong> ${escH(def.definition)}</div>`;
+            if (def.example) html += `<div class="dict-example">"${escH(def.example)}"</div>`;
+        });
+        if (defs.length > 6) {
+            html += `<div style="font-size:12px;color:#999;padding-left:12px;margin-bottom:4px;">+${defs.length - 6} more definitions</div>`;
+        }
+        html += `</div>`;
+    });
+
+    //  Synonyms 
+    const allSynonyms = [...new Set(
+        allMeanings.flatMap(m => [
+            ...(m.synonyms || []),
+            ...(m.definitions || []).flatMap(d => d.synonyms || [])
+        ])
+    )].slice(0, 18);
+
+    if (allSynonyms.length) {
+        html += `<div class="dict-divider"></div><div class="dict-section">`;
+        html += `<div class="dict-meta-label">Synonyms</div>`;
+        html += `<div class="dict-synonyms">${allSynonyms.map(s =>
+            `<span class="dict-syn-pill" onclick="quickLookup('${escH(s)}')">${escH(s)}</span>`
+        ).join('')}</div>`;
+        html += `</div>`;
+    }
+
+    //  Antonyms 
+    const allAntonyms = [...new Set(
+        allMeanings.flatMap(m => [
+            ...(m.antonyms || []),
+            ...(m.definitions || []).flatMap(d => d.antonyms || [])
+        ])
+    )].slice(0, 10);
+
+    if (allAntonyms.length) {
+        html += `<div class="dict-divider"></div><div class="dict-section">`;
+        html += `<div class="dict-meta-label">Antonyms</div>`;
+        html += `<div class="dict-synonyms">${allAntonyms.map(s =>
+            `<span class="dict-syn-pill" style="background:#fff1f1;color:#c0392b;border-color:#f9c0c0;" onclick="quickLookup('${escH(s)}')">${escH(s)}</span>`
+        ).join('')}</div>`;
+        html += `</div>`;
+    }
+
+    //  Etymology 
+    const origins = entries.map(e => e.origin).filter(Boolean);
+    if (origins.length) {
+        html += `<div class="dict-divider"></div><div class="dict-section">`;
+        html += `<div class="dict-meta-label">Etymology / Origin</div>`;
+        html += `<div class="dict-origin">${escH(origins[0])}</div>`;
+        html += `</div>`;
+    }
+
+    //  Source link 
+    const sourceUrls = [...new Set(entries.flatMap(e => e.sourceUrls || []))];
+    if (sourceUrls.length) {
+        html += `<div class="dict-source">Source: <a href="${sourceUrls[0]}" target="_blank">${sourceUrls[0]}</a></div>`;
+    }
+
+    body.innerHTML = html;
+}
+
+function playDictAudio(audioId) {
+    const url = dictAudioUrls[audioId];
+    if (!url) return;
+    new Audio(url).play().catch(() => {});
+}
+
+function quickLookup(word) {
+    document.getElementById('dictInput').value = word;
+    lookupWord();
+}
+
+function addToHistory(word) {
+    dictHistory = [word, ...dictHistory.filter(w => w !== word)].slice(0, 12);
+    localStorage.setItem('dictHistory', JSON.stringify(dictHistory));
+}
+
+function renderHistoryHTML() {
+    if (!dictHistory.length) return '';
+    return `<div class="dict-history">${
+        dictHistory.map(w => `<span class="dict-hist-pill" onclick="quickLookup('${escH(w)}')">${escH(w)}</span>`).join('')
+    }</div>`;
+}
+
+function escH(str) {
+    return String(str)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;')
+        .replace(/'/g,'&#39;');
+}
+
+//  INIT 
 renderFolderSelect();
 renderLibrary();
 updateZoomDisplay();
