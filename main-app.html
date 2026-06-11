@@ -358,26 +358,76 @@ async function fetchBytes(url, ms = 10000) {
   } finally { clearTimeout(t); }
 }
 
-// ── PDF LOADER ────────────────────────────────────────────────────────────────
-// Strategy (in order):
-//   1. Session memory          — instant
-//   2. IndexedDB binary cache  — fast, no network
-//   3. Direct pdf.js stream    — works when server allows CORS or same-origin
-//   4. fetch via corsproxy.io  — reliable single proxy, store result in IDB
-//   5. pdf.js stream via proxy — last resort if fetch body is blocked
+// -- PDF LOADER ---------------------------------------------------------------
+// Tier 1: session memory  -- instant, zero network
+// Tier 2: IndexedDB       -- binary cache, no network
+// Tier 3: parallel race   -- direct + 4 proxies fire simultaneously via fetch,
+//                            validated as real PDF bytes before handing to pdfjs,
+//                            winner stored in IDB for next time
+// Tier 4: pdfjs streaming -- race the same URLs through pdfjs native loader
+//                            as absolute last resort
+
+function proxyUrls(url) {
+  const enc = encodeURIComponent(url);
+  return [
+    url,
+    `https://corsproxy.io/?url=${enc}`,
+    `https://api.allorigins.win/raw?url=${enc}`,
+    `https://api.codetabs.com/v1/proxy?quest=${enc}`,
+    `https://proxy.cors.sh/${url}`
+  ];
+}
+
+async function fetchValidPdf(proxyUrl, ms) {
+  ms = ms || 25000;
+  const ctrl = new AbortController();
+  const t = setTimeout(function() { ctrl.abort(); }, ms);
+  try {
+    const res = await fetch(proxyUrl, {signal: ctrl.signal});
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const buf = await res.arrayBuffer();
+    const h = new Uint8Array(buf, 0, 4);
+    if (h[0] !== 0x25 || h[1] !== 0x50 || h[2] !== 0x44 || h[3] !== 0x46) throw new Error('not a PDF');
+    return buf;
+  } finally { clearTimeout(t); }
+}
+
+function raceFetch(url) {
+  const urls = proxyUrls(url);
+  return new Promise(function(resolve, reject) {
+    let failures = 0;
+    urls.forEach(function(u) {
+      fetchValidPdf(u).then(resolve).catch(function() {
+        if (++failures === urls.length) reject(new Error('all fetch attempts failed'));
+      });
+    });
+  });
+}
+
+function racePdfJs(url) {
+  const urls = proxyUrls(url);
+  return new Promise(function(resolve, reject) {
+    let failures = 0;
+    urls.forEach(function(u) {
+      withTimeout(pdfjsLib.getDocument(Object.assign({}, PDF_OPTS, {url: u, withCredentials: false})).promise, 25000)
+        .then(resolve)
+        .catch(function() { if (++failures === urls.length) reject(new Error('all pdfjs attempts failed')); });
+    });
+  });
+}
 
 async function loadPdfFast(url, bookId) {
   // Tier 1: session memory
   if (sessionDocCache.has(bookId)) { idbTouch(bookId); return sessionDocCache.get(bookId); }
   setLoadBar(15);
 
-  // Tier 2: IndexedDB
+  // Tier 2: IndexedDB binary cache
   if (cachedBookIds.has(String(bookId))) {
     const cached = await idbGet(bookId);
     if (cached && cached.data) {
       setLoadBar(60); idbTouch(bookId);
       try {
-        const doc = await pdfjsLib.getDocument({...PDF_OPTS, data: cached.data.slice(0)}).promise;
+        const doc = await pdfjsLib.getDocument(Object.assign({}, PDF_OPTS, {data: cached.data.slice(0)})).promise;
         sessionDocCache.set(bookId, doc); setLoadBar(100); return doc;
       } catch(_) { await idbDelete(bookId); cachedBookIds.delete(String(bookId)); }
     }
@@ -385,53 +435,28 @@ async function loadPdfFast(url, bookId) {
 
   setLoadBar(30);
 
-  // Tier 3: direct pdf.js streaming (works for same-origin or CORS-enabled servers)
+  // Tier 3: race all proxies via fetch with PDF magic byte validation
   try {
-    const doc = await withTimeout(
-      pdfjsLib.getDocument({...PDF_OPTS, url, withCredentials: false}).promise,
-      12000
-    );
-    sessionDocCache.set(bookId, doc); setLoadBar(100); return doc;
-  } catch(_) {}
-
-  setLoadBar(50);
-
-  // Tier 4: fetch bytes through corsproxy.io (correct ?url= format), cache result
-  const corsproxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(url)}`;
-  try {
-    const buf = await fetchBytes(corsproxyUrl, 20000);
-    const doc = await pdfjsLib.getDocument({...PDF_OPTS, data: buf.slice(0)}).promise;
+    const buf = await raceFetch(url);
+    setLoadBar(80);
+    const doc = await pdfjsLib.getDocument(Object.assign({}, PDF_OPTS, {data: buf.slice(0)})).promise;
     sessionDocCache.set(bookId, doc); setLoadBar(100);
-    idbPut(bookId, buf).then(() => { cachedBookIds.add(String(bookId)); updateLibraryCacheBadge(bookId); });
+    idbPut(bookId, buf).then(function() { cachedBookIds.add(String(bookId)); updateLibraryCacheBadge(bookId); });
     return doc;
   } catch(_) {}
 
-  setLoadBar(65);
+  setLoadBar(60);
 
-  // Tier 5: allorigins fallback (no file size cap, different infrastructure)
-  const alloriginsUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+  // Tier 4: race all proxies through pdfjs native streaming
   try {
-    const buf = await fetchBytes(alloriginsUrl, 20000);
-    const doc = await pdfjsLib.getDocument({...PDF_OPTS, data: buf.slice(0)}).promise;
-    sessionDocCache.set(bookId, doc); setLoadBar(100);
-    idbPut(bookId, buf).then(() => { cachedBookIds.add(String(bookId)); updateLibraryCacheBadge(bookId); });
-    return doc;
-  } catch(_) {}
-
-  setLoadBar(80);
-
-  // Tier 6: pdf.js stream via corsproxy (catches cases where fetch body blocked but streaming works)
-  try {
-    const doc = await withTimeout(
-      pdfjsLib.getDocument({...PDF_OPTS, url: corsproxyUrl, withCredentials: false}).promise,
-      20000
-    );
+    const doc = await racePdfJs(url);
     sessionDocCache.set(bookId, doc); setLoadBar(100); return doc;
   } catch(_) {}
 
   setLoadBar(0);
-  throw new Error('Could not load PDF. Make sure the URL is a direct link to a .pdf file and the server allows cross-origin access.');
+  throw new Error('Could not load PDF. Make sure the URL points directly to a .pdf file.');
 }
+
 
 // ── CACHE BADGE UPDATE ────────────────────────────────────────────────────────
 function updateLibraryCacheBadge(bookId) {
