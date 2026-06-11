@@ -396,22 +396,34 @@ async function loadPdfFast(url, bookId) {
 
   setLoadBar(50);
 
-  // Tier 4: fetch bytes through corsproxy.io, cache result
-  const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+  // Tier 4: fetch bytes through corsproxy.io (correct ?url= format), cache result
+  const corsproxyUrl = `https://corsproxy.io/?url=${encodeURIComponent(url)}`;
   try {
-    const buf = await fetchBytes(proxyUrl, 20000);
+    const buf = await fetchBytes(corsproxyUrl, 20000);
     const doc = await pdfjsLib.getDocument({...PDF_OPTS, data: buf.slice(0)}).promise;
     sessionDocCache.set(bookId, doc); setLoadBar(100);
     idbPut(bookId, buf).then(() => { cachedBookIds.add(String(bookId)); updateLibraryCacheBadge(bookId); });
     return doc;
   } catch(_) {}
 
-  setLoadBar(70);
+  setLoadBar(65);
 
-  // Tier 5: pdf.js stream via proxy
+  // Tier 5: allorigins fallback (no file size cap, different infrastructure)
+  const alloriginsUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+  try {
+    const buf = await fetchBytes(alloriginsUrl, 20000);
+    const doc = await pdfjsLib.getDocument({...PDF_OPTS, data: buf.slice(0)}).promise;
+    sessionDocCache.set(bookId, doc); setLoadBar(100);
+    idbPut(bookId, buf).then(() => { cachedBookIds.add(String(bookId)); updateLibraryCacheBadge(bookId); });
+    return doc;
+  } catch(_) {}
+
+  setLoadBar(80);
+
+  // Tier 6: pdf.js stream via corsproxy (catches cases where fetch body blocked but streaming works)
   try {
     const doc = await withTimeout(
-      pdfjsLib.getDocument({...PDF_OPTS, url: proxyUrl, withCredentials: false}).promise,
+      pdfjsLib.getDocument({...PDF_OPTS, url: corsproxyUrl, withCredentials: false}).promise,
       20000
     );
     sessionDocCache.set(bookId, doc); setLoadBar(100); return doc;
