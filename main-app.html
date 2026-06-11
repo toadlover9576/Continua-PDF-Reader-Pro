@@ -332,7 +332,6 @@
         ::-webkit-scrollbar-thumb { background: #888; border-radius: 5px; }
         ::-webkit-scrollbar-thumb:hover { background: #555; }
 
-        /*  DICTIONARY PANEL  */
         .dict-panel {
             width: 0;
             min-width: 0;
@@ -574,7 +573,6 @@
             </div>
         </div>
 
-        <!--  DICTIONARY PANEL  -->
         <div class="dict-panel" id="dictPanel">
             <div class="dict-header">
                 <span class="dict-header-title">Dictionary</span>
@@ -629,41 +627,67 @@
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-// ─── FEATURE DETECT ───────────────────────────────────────────────────────────
-const SUPPORTS_OFFSCREEN = (function() {
-    try { return typeof OffscreenCanvas !== 'undefined' && !!new OffscreenCanvas(1,1).getContext('2d'); }
-    catch(_) { return false; }
-})();
+// ─── CONSTANTS ────────────────────────────────────────────────────────────────
+const cMapUrl = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/';
+const PDF_OPTIONS_BASE = { cMapUrl, cMapPacked: true, disableAutoFetch: false, disableStream: false };
+const RENDER_CACHE_MAX = 30;
+const FETCH_TIMEOUT_MS = 18000;   // per-proxy fetch timeout
+const PDFJS_PARSE_TIMEOUT_MS = 20000; // pdfjsLib.getDocument().promise timeout
 
-// ─── SESSION-LEVEL DOC CACHE ──────────────────────────────────────────────────
+// ─── SESSION CACHE ────────────────────────────────────────────────────────────
 const sessionDocCache = new Map(); // bookId → pdfDoc
 
 // ─── RENDER CACHE ─────────────────────────────────────────────────────────────
-// Stores live HTMLCanvasElement objects — zero copy on paint, instant display.
-const renderCache = new Map(); // cacheKey → { canvas, width, height }
-const RENDER_CACHE_MAX = 30;   // bigger cache = more instant page turns
-const renderCacheOrder = [];   // insertion-order LRU tracking
+const renderCache = new Map();     // cacheKey → HTMLCanvasElement
+const renderCacheOrder = [];
 
 // ─── PRELOAD ──────────────────────────────────────────────────────────────────
 let preloadTimeout = null;
+
+// ─── LOAD BAR ─────────────────────────────────────────────────────────────────
+function setLoadBar(pct) {
+    const bar = document.getElementById('loadBar');
+    bar.style.width = pct + '%';
+    if (pct >= 100) setTimeout(() => { bar.style.width = '0'; }, 400);
+}
+
+// ─── HELPER: promise with timeout ─────────────────────────────────────────────
+function withTimeout(promise, ms, label) {
+    return new Promise((resolve, reject) => {
+        const t = setTimeout(() => reject(new Error(`Timeout: ${label} took >${ms}ms`)), ms);
+        promise.then(v => { clearTimeout(t); resolve(v); }, e => { clearTimeout(t); reject(e); });
+    });
+}
+
+// ─── HELPER: validate PDF magic bytes ────────────────────────────────────────
+// A valid PDF always starts with %PDF- (hex: 25 50 44 46 2D).
+// Proxies sometimes return an HTML error page with HTTP 200; this check
+// catches those immediately rather than letting pdfjsLib hang on bad data.
+function isPdfBytes(buffer) {
+    if (!buffer || buffer.byteLength < 5) return false;
+    const bytes = new Uint8Array(buffer, 0, 5);
+    return bytes[0] === 0x25 && bytes[1] === 0x50 &&
+           bytes[2] === 0x44 && bytes[3] === 0x46 && bytes[4] === 0x2D;
+}
 
 // ─── PERSISTENT PDF BINARY CACHE (IndexedDB) ─────────────────────────────────
 const IDB_NAME = 'continua_pdf_cache';
 const IDB_STORE = 'pdfs';
 let idb = null;
 
-// Open IDB once and keep the handle; all callers share it.
 const idbReady = new Promise((resolve) => {
-    const req = indexedDB.open(IDB_NAME, 1);
-    req.onupgradeneeded = e => {
-        const db = e.target.result;
-        if (!db.objectStoreNames.contains(IDB_STORE)) {
-            const store = db.createObjectStore(IDB_STORE, { keyPath: 'bookId' });
-            store.createIndex('accessed', 'accessed', { unique: false });
-        }
-    };
-    req.onsuccess = e => { idb = e.target.result; resolve(idb); };
-    req.onerror = () => resolve(null); // graceful degradation
+    try {
+        const req = indexedDB.open(IDB_NAME, 1);
+        req.onupgradeneeded = e => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(IDB_STORE)) {
+                const store = db.createObjectStore(IDB_STORE, { keyPath: 'bookId' });
+                store.createIndex('accessed', 'accessed', { unique: false });
+            }
+        };
+        req.onsuccess = e => { idb = e.target.result; resolve(idb); };
+        req.onerror = () => resolve(null);
+    } catch(_) { resolve(null); }
 });
 
 async function idbGet(bookId) {
@@ -683,8 +707,7 @@ async function idbPut(bookId, arrayBuffer) {
     try {
         const db = await idbReady;
         if (!db) return;
-        // Evict LRU entries if at cap — do it in the same tx as the put
-        const all = await new Promise(resolve => {
+        const allKeys = await new Promise(resolve => {
             const tx = db.transaction(IDB_STORE, 'readonly');
             const req = tx.objectStore(IDB_STORE).index('accessed').getAllKeys();
             req.onsuccess = () => resolve(req.result);
@@ -692,10 +715,7 @@ async function idbPut(bookId, arrayBuffer) {
         });
         const tx = db.transaction(IDB_STORE, 'readwrite');
         const store = tx.objectStore(IDB_STORE);
-        if (all.length >= 20) {
-            // getAllKeys on index returns sorted ascending by accessed; delete oldest
-            store.delete(all[0]);
-        }
+        if (allKeys.length >= 20) store.delete(allKeys[0]);
         store.put({ bookId: String(bookId), data: arrayBuffer, accessed: Date.now(), size: arrayBuffer.byteLength });
     } catch(_) {}
 }
@@ -710,7 +730,6 @@ async function idbDelete(bookId) {
 }
 
 function idbTouch(bookId) {
-    // Fire-and-forget; don't await this ever
     idbReady.then(db => {
         if (!db) return;
         const tx = db.transaction(IDB_STORE, 'readwrite');
@@ -734,7 +753,6 @@ async function idbGetCachedIds() {
 }
 
 let cachedBookIds = new Set();
-// Kick off IDB init immediately; update badge when ready (non-blocking)
 idbGetCachedIds().then(ids => { cachedBookIds = ids; renderLibrary(); });
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
@@ -773,56 +791,79 @@ localStorage.setItem('pdfActiveFolder', activeFolder);
 
 let dragStartIndex = null, dragCurrentIndex = null, isDraggingLibraryItem = false;
 
-// ─── LOAD BAR ─────────────────────────────────────────────────────────────────
-function setLoadBar(pct) {
-    const bar = document.getElementById('loadBar');
-    bar.style.width = pct + '%';
-    if (pct >= 100) setTimeout(() => { bar.style.width = '0'; }, 400);
-}
-
-// ─── FETCH WITH TIMEOUT ───────────────────────────────────────────────────────
-function fetchWithTimeout(url, timeoutMs = 12000) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
-}
-
-// ─── PROXY RACE ───────────────────────────────────────────────────────────────
+// ─── PROXY LIST ───────────────────────────────────────────────────────────────
 function getProxies(url) {
     return [
         url,
         `https://corsproxy.io/?${encodeURIComponent(url)}`,
-        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
-        `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
     ];
 }
 
-async function fetchPdfBytes(url) {
-    const proxies = getProxies(url);
-    const racePromises = proxies.map(async proxyUrl => {
-        const res = await fetchWithTimeout(proxyUrl, 12000);
+// ─── FETCH ONE PROXY ──────────────────────────────────────────────────────────
+// Validates magic bytes so HTML error pages never reach pdfjsLib.
+async function tryFetchProxy(proxyUrl) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    try {
+        const res = await fetch(proxyUrl, { signal: controller.signal });
+        clearTimeout(timer);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const buf = await res.arrayBuffer();
-        if (buf.byteLength < 100) throw new Error('Empty response');
+        if (!isPdfBytes(buf)) throw new Error('Response is not a valid PDF (bad magic bytes)');
         return buf;
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+// ─── RACE ALL PROXIES FOR BYTES ───────────────────────────────────────────────
+async function fetchPdfBytes(url) {
+    const proxies = getProxies(url);
+    const errors = [];
+    // Try proxies in parallel; return the first that gives us valid PDF bytes.
+    return new Promise((resolve, reject) => {
+        let settled = 0;
+        proxies.forEach(proxyUrl => {
+            tryFetchProxy(proxyUrl)
+                .then(buf => {
+                    resolve(buf); // first valid win
+                })
+                .catch(err => {
+                    errors.push(`${proxyUrl}: ${err.message}`);
+                    settled++;
+                    if (settled === proxies.length) {
+                        reject(new Error(
+                            'All proxies failed. The PDF may be unreachable or CORS-blocked.\n\n' +
+                            errors.join('\n')
+                        ));
+                    }
+                });
+        });
     });
-    return Promise.any(racePromises);
+}
+
+// ─── PARSE BUFFER THROUGH PDFJSLIB WITH TIMEOUT ───────────────────────────────
+// Wraps pdfjsLib.getDocument().promise in a hard timeout so a corrupted
+// or partially-downloaded buffer can never stall the UI forever.
+async function parsePdfBuffer(arrayBuffer) {
+    const loadingTask = pdfjsLib.getDocument({ ...PDF_OPTIONS_BASE, data: arrayBuffer });
+    try {
+        return await withTimeout(loadingTask.promise, PDFJS_PARSE_TIMEOUT_MS, 'pdfjsLib.getDocument');
+    } catch (e) {
+        loadingTask.destroy().catch(() => {});
+        throw e;
+    }
 }
 
 // ─── CORE PDF LOADER ──────────────────────────────────────────────────────────
 // Three-tier loading:
 //   1. Session cache  → instant (same-tab revisit)
 //   2. IndexedDB      → fast (~50-200ms, no network)
-//   3. Network        → fetch bytes, parse, store in IDB for next time
-//
-// Key insight: IDB read is kicked off in parallel with showing the skeleton,
-// not awaited before we even start. The caller gets the doc as fast as possible.
-
-const cMapUrl = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/';
-const PDF_OPTIONS = { cMapUrl, cMapPacked: true, disableAutoFetch: false, disableStream: false };
-
+//   3. Network        → validated bytes, hard-timeout parse, async IDB store
 async function loadPdfFast(url, bookId) {
-    // Tier 1: session memory — truly instant
+    // Tier 1: session memory
     if (sessionDocCache.has(bookId)) {
         idbTouch(bookId);
         return sessionDocCache.get(bookId);
@@ -830,70 +871,50 @@ async function loadPdfFast(url, bookId) {
 
     setLoadBar(15);
 
-    // Tier 2: IndexedDB — fast local read, no network round-trip
-    // We check cachedBookIds first to skip the async IDB lookup entirely when
-    // we know nothing is there.
+    // Tier 2: IndexedDB — skip the async lookup if we know there's nothing there
     if (cachedBookIds.has(String(bookId))) {
         const cached = await idbGet(bookId);
-        if (cached && cached.data) {
+        if (cached && cached.data && isPdfBytes(cached.data)) {
             setLoadBar(60);
             idbTouch(bookId);
             try {
-                const doc = await pdfjsLib.getDocument({ ...PDF_OPTIONS, data: cached.data }).promise;
+                const doc = await parsePdfBuffer(cached.data);
                 sessionDocCache.set(bookId, doc);
                 setLoadBar(100);
                 return doc;
             } catch (_) {
-                // Corrupted cache entry — fall through to network
+                // Corrupted IDB entry — evict and fall through to network
                 await idbDelete(bookId);
                 cachedBookIds.delete(String(bookId));
             }
+        } else if (cached) {
+            // Exists but invalid — clean up
+            await idbDelete(bookId);
+            cachedBookIds.delete(String(bookId));
         }
     }
 
-    // Tier 3: Network fetch — race all proxies simultaneously
+    // Tier 3: Network fetch
     setLoadBar(25);
-    let arrayBuffer = null;
-    try {
-        arrayBuffer = await fetchPdfBytes(url);
-    } catch (_) {
-        // fetchPdfBytes failed entirely; try pdfjsLib streaming as last resort
-        setLoadBar(40);
-        const proxies = getProxies(url);
-        const docPromises = proxies.map(proxyUrl =>
-            pdfjsLib.getDocument({ ...PDF_OPTIONS, url: proxyUrl, withCredentials: false }).promise
-        );
-        try {
-            const doc = await Promise.any(docPromises);
-            sessionDocCache.set(bookId, doc);
-            setLoadBar(100);
-            return doc;
-        } catch(finalErr) {
-            setLoadBar(0);
-            throw new Error('All loading strategies failed. The PDF URL may be unreachable or CORS-blocked. Try a direct PDF link.');
-        }
-    }
-
+    const arrayBuffer = await fetchPdfBytes(url);  // throws on total failure
     setLoadBar(75);
-    // Pass buffer directly — no .slice(0) copy needed, pdfjsLib doesn't mutate it
-    const doc = await pdfjsLib.getDocument({ ...PDF_OPTIONS, data: arrayBuffer }).promise;
+
+    const doc = await parsePdfBuffer(arrayBuffer);
     sessionDocCache.set(bookId, doc);
     setLoadBar(100);
 
-    // Store in IDB asynchronously — don't block rendering
+    // Store in IDB asynchronously — never block rendering
     idbPut(bookId, arrayBuffer).then(() => {
         cachedBookIds.add(String(bookId));
-        updateLibraryCacheBadge(bookId); // targeted badge update, not full re-render
-    });
+        updateLibraryCacheBadge(bookId);
+    }).catch(() => {});
 
     return doc;
 }
 
 // ─── TARGETED CACHE BADGE UPDATE ─────────────────────────────────────────────
-// Avoids full renderLibrary() call just to show the CACHED badge
 function updateLibraryCacheBadge(bookId) {
-    const items = document.querySelectorAll('.library-item');
-    items.forEach(item => {
+    document.querySelectorAll('.library-item').forEach(item => {
         const idx = parseInt(item.getAttribute('data-index'));
         if (!isNaN(idx) && library[idx] && library[idx].id === bookId) {
             const titleEl = item.querySelector('.library-item-title');
@@ -908,12 +929,6 @@ function updateLibraryCacheBadge(bookId) {
 }
 
 // ─── PAGE RENDER ──────────────────────────────────────────────────────────────
-// Key optimizations:
-//   - Cache stores the live HTMLCanvasElement — painting is a single DOM append,
-//     no getImageData/putImageData copy overhead.
-//   - If already cached, paint is synchronous and ~instant.
-//   - Skeleton only shown when we actually have to render (cache miss).
-
 async function renderPage(pageNum) {
     if (!pdfDoc) return;
 
@@ -931,30 +946,25 @@ async function renderPage(pageNum) {
         const cacheKey = `${currentPdfId}-${pageNum}-${scale}`;
 
         if (!renderCache.has(cacheKey)) {
-            // Cache miss — need to actually render
             const page = await pdfDoc.getPage(pageNum);
             const viewport = page.getViewport({ scale });
 
-            // Show skeleton sized to the actual page — avoids layout jump
             const skeleton = document.createElement('div');
             skeleton.className = 'loading-skeleton';
             skeleton.style.cssText = `width:${viewport.width}px;height:${viewport.height}px`;
             viewer.innerHTML = '';
             viewer.appendChild(skeleton);
 
-            // Render to a canvas we'll keep in the cache
             const canvas = document.createElement('canvas');
             canvas.width = viewport.width;
             canvas.height = viewport.height;
-            const ctx = canvas.getContext('2d');
-            await page.render({ canvasContext: ctx, viewport }).promise;
+            await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
 
             evictRenderCache();
             renderCache.set(cacheKey, canvas);
             renderCacheOrder.push(cacheKey);
         }
 
-        // Cache hit (or just-rendered) — swap skeleton for canvas
         const canvas = renderCache.get(cacheKey);
         viewer.innerHTML = '';
         const container = document.createElement('div');
@@ -988,9 +998,7 @@ function evictRenderCache() {
     }
 }
 
-// ─── PARALLEL PRELOAD ────────────────────────────────────────────────────────
-// Preload next 3 and previous 1 pages in parallel (not sequential).
-// Uses requestIdleCallback when available so it doesn't compete with rendering.
+// ─── PARALLEL PRELOAD ─────────────────────────────────────────────────────────
 function schedulePreload(currentPageNum) {
     if (preloadTimeout) clearTimeout(preloadTimeout);
     preloadTimeout = setTimeout(() => {
@@ -998,7 +1006,6 @@ function schedulePreload(currentPageNum) {
             .filter(p => p >= 1 && p <= totalPages);
 
         const run = async () => {
-            // All pages rendered in parallel
             await Promise.allSettled(toPreload.map(async p => {
                 const key = `${currentPdfId}-${p}-${scale}`;
                 if (renderCache.has(key) || !pdfDoc) return;
@@ -1008,7 +1015,7 @@ function schedulePreload(currentPageNum) {
                 canvas.width = viewport.width;
                 canvas.height = viewport.height;
                 await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-                if (!renderCache.has(key)) { // check again after async gap
+                if (!renderCache.has(key)) {
                     evictRenderCache();
                     renderCache.set(key, canvas);
                     renderCacheOrder.push(key);
@@ -1021,7 +1028,7 @@ function schedulePreload(currentPageNum) {
         } else {
             run();
         }
-    }, 150); // shorter delay than before
+    }, 150);
 }
 
 // ─── LIBRARY LOADING ──────────────────────────────────────────────────────────
@@ -1030,7 +1037,6 @@ async function loadPdfFromLibrary(index) {
     currentPdfId = item.id;
 
     const viewer = document.getElementById('pdfViewer');
-    // Show a skeleton immediately — sized to A4 default until we know real dims
     viewer.innerHTML = `<div class="loading-skeleton" style="width:595px;height:842px;"></div>`;
 
     try {
@@ -1044,12 +1050,8 @@ async function loadPdfFromLibrary(index) {
         document.getElementById('pageInput').max = totalPages;
         updateZoomDisplay();
 
-        // Render first page immediately
         await renderPage(currentPage);
-
-        // TOC is fire-and-forget — don't block first-page display
         loadTableOfContents().catch(() => {});
-
         renderLibrary();
 
     } catch (error) {
@@ -1091,7 +1093,7 @@ async function addPdf() {
         closeAddModal();
         await loadPdfFromLibrary(library.length - 1);
     } catch (error) {
-        alert('Failed to load PDF. Error: ' + error.message);
+        alert('Failed to load PDF.\n\n' + error.message);
         console.error(error);
     } finally {
         addButton.textContent = 'Add to Library';
@@ -1145,7 +1147,6 @@ function updateZoomDisplay() {
 }
 
 // ─── PROGRESS ─────────────────────────────────────────────────────────────────
-// No longer calls renderLibrary() on every page turn — targeted DOM update only.
 function updateProgress() {
     if (!currentPdfId) return;
     const index = library.findIndex(i => i.id === currentPdfId);
@@ -1155,7 +1156,6 @@ function updateProgress() {
     library[index].scale = scale;
     localStorage.setItem('pdfLibrary', JSON.stringify(library));
 
-    // Update only the affected library item's progress bar and text
     const itemEl = document.querySelector(`.library-item[data-index="${index}"]`);
     if (itemEl) {
         const progressText = itemEl.querySelector('.library-item-progress');
@@ -1394,7 +1394,6 @@ function deletePdf(index) {
             sessionDocCache.delete(id);
             idbDelete(id);
             cachedBookIds.delete(String(id));
-            // Clear render cache for this book
             for (const key of [...renderCache.keys()]) {
                 if (key.startsWith(`${id}-`)) {
                     renderCache.delete(key);
@@ -1494,20 +1493,13 @@ document.addEventListener('fullscreenchange', () => {
     if (!document.fullscreenElement) document.getElementById('fullscreenBtn').textContent = 'Fullscreen';
 });
 
-// ─── KEYBOARD SHORTCUTS ───────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
     if (e.target.tagName === 'INPUT') return;
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextPage();
     if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prevPage();
 });
 
-// ══════════════════════════════════════════════════════════════════════════════
-// DICTIONARY PANEL
-// Uses Free Dictionary API (dictionaryapi.dev) — no API key required.
-// Covers the full English vocabulary: common, literary, academic, technical.
-// Fully isolated — touches only its own DOM nodes and localStorage key.
-// ══════════════════════════════════════════════════════════════════════════════
-
+// ─── DICTIONARY ───────────────────────────────────────────────────────────────
 let dictPanelOpen = false;
 let dictHistory = JSON.parse(localStorage.getItem('dictHistory') || '[]');
 let dictAudioUrls = {};
