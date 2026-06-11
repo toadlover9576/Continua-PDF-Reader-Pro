@@ -336,49 +336,42 @@ function setLoadBar(pct) {
 }
 
 // ── FETCH HELPERS ─────────────────────────────────────────────────────────────
-function fetchWithTimeout(url, ms = 14000) {
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), ms);
-  return fetch(url, {signal: ctrl.signal}).finally(() => clearTimeout(t));
-}
-
-function getProxies(url) {
-  return [
-    url,
-    `https://corsproxy.io/?${encodeURIComponent(url)}`,
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-    `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
-  ];
-}
-
-async function promiseAny(promises) {
-  // Polyfill for Promise.any
-  if (typeof Promise.any === 'function') return Promise.any(promises);
-  return new Promise((resolve, reject) => {
-    let errors = [], settled = 0;
-    promises.forEach(p => p.then(resolve).catch(e => { errors.push(e); if (++settled === promises.length) reject(errors); }));
-  });
-}
-
-async function fetchPdfBytes(url) {
-  const proxies = getProxies(url);
-  return promiseAny(proxies.map(async proxyUrl => {
-    const res = await fetchWithTimeout(proxyUrl);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const buf = await res.arrayBuffer();
-    if (buf.byteLength < 100) throw new Error('Empty response');
-    return buf;
-  }));
-}
-
-// ── PDF LOADER (3-tier) ───────────────────────────────────────────────────────
 const cMapUrl = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/';
 const PDF_OPTS = {cMapUrl, cMapPacked:true, disableAutoFetch:false, disableStream:false};
 
+function withTimeout(promise, ms) {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error('timeout')), ms);
+    promise.then(v => { clearTimeout(t); resolve(v); }, e => { clearTimeout(t); reject(e); });
+  });
+}
+
+async function fetchBytes(url, ms = 10000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  try {
+    const res = await fetch(url, {signal: ctrl.signal});
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const buf = await res.arrayBuffer();
+    if (buf.byteLength < 100) throw new Error('empty');
+    return buf;
+  } finally { clearTimeout(t); }
+}
+
+// ── PDF LOADER ────────────────────────────────────────────────────────────────
+// Strategy (in order):
+//   1. Session memory          — instant
+//   2. IndexedDB binary cache  — fast, no network
+//   3. Direct pdf.js stream    — works when server allows CORS or same-origin
+//   4. fetch via corsproxy.io  — reliable single proxy, store result in IDB
+//   5. pdf.js stream via proxy — last resort if fetch body is blocked
+
 async function loadPdfFast(url, bookId) {
+  // Tier 1: session memory
   if (sessionDocCache.has(bookId)) { idbTouch(bookId); return sessionDocCache.get(bookId); }
   setLoadBar(15);
 
+  // Tier 2: IndexedDB
   if (cachedBookIds.has(String(bookId))) {
     const cached = await idbGet(bookId);
     if (cached && cached.data) {
@@ -390,31 +383,42 @@ async function loadPdfFast(url, bookId) {
     }
   }
 
-  setLoadBar(25);
-  let arrayBuffer = null;
-  try {
-    arrayBuffer = await fetchPdfBytes(url);
-  } catch(_) {
-    setLoadBar(40);
-    try {
-      const doc = await promiseAny(getProxies(url).map(u =>
-        pdfjsLib.getDocument({...PDF_OPTS, url:u, withCredentials:false}).promise
-      ));
-      sessionDocCache.set(bookId, doc); setLoadBar(100); return doc;
-    } catch(finalErr) {
-      setLoadBar(0);
-      throw new Error('All loading strategies failed. The PDF URL may be unreachable or CORS-blocked. Try a direct PDF link.');
-    }
-  }
+  setLoadBar(30);
 
-  setLoadBar(75);
-  const doc = await pdfjsLib.getDocument({...PDF_OPTS, data: arrayBuffer.slice(0)}).promise;
-  sessionDocCache.set(bookId, doc); setLoadBar(100);
-  idbPut(bookId, arrayBuffer).then(() => {
-    cachedBookIds.add(String(bookId));
-    updateLibraryCacheBadge(bookId);
-  });
-  return doc;
+  // Tier 3: direct pdf.js streaming (works for same-origin or CORS-enabled servers)
+  try {
+    const doc = await withTimeout(
+      pdfjsLib.getDocument({...PDF_OPTS, url, withCredentials: false}).promise,
+      12000
+    );
+    sessionDocCache.set(bookId, doc); setLoadBar(100); return doc;
+  } catch(_) {}
+
+  setLoadBar(50);
+
+  // Tier 4: fetch bytes through corsproxy.io, cache result
+  const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+  try {
+    const buf = await fetchBytes(proxyUrl, 20000);
+    const doc = await pdfjsLib.getDocument({...PDF_OPTS, data: buf.slice(0)}).promise;
+    sessionDocCache.set(bookId, doc); setLoadBar(100);
+    idbPut(bookId, buf).then(() => { cachedBookIds.add(String(bookId)); updateLibraryCacheBadge(bookId); });
+    return doc;
+  } catch(_) {}
+
+  setLoadBar(70);
+
+  // Tier 5: pdf.js stream via proxy
+  try {
+    const doc = await withTimeout(
+      pdfjsLib.getDocument({...PDF_OPTS, url: proxyUrl, withCredentials: false}).promise,
+      20000
+    );
+    sessionDocCache.set(bookId, doc); setLoadBar(100); return doc;
+  } catch(_) {}
+
+  setLoadBar(0);
+  throw new Error('Could not load PDF. Make sure the URL is a direct link to a .pdf file and the server allows cross-origin access.');
 }
 
 // ── CACHE BADGE UPDATE ────────────────────────────────────────────────────────
