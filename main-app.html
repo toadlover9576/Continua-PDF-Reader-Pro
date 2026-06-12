@@ -1,983 +1,1680 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Continua | PDF Reader Pro</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);min-height:100vh;padding:20px}
-.container{max-width:1600px;margin:0 auto;background:white;border-radius:20px;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden;display:flex;flex-direction:column;height:calc(100vh - 40px)}
-.header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;padding:20px 30px;display:flex;justify-content:space-between;align-items:center}
-.header h1{font-size:28px;font-weight:600}
-.header-buttons{display:flex;gap:10px}
-.btn{padding:10px 20px;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;transition:all .3s}
-.btn-primary{background:white;color:#667eea}
-.btn-primary:hover{transform:translateY(-2px);box-shadow:0 5px 15px rgba(0,0,0,.2)}
-.btn-secondary{background:rgba(255,255,255,.2);color:white;border:1px solid white}
-.btn-secondary:hover{background:rgba(255,255,255,.3)}
-.btn-dict{background:rgba(255,255,255,.15);color:white;border:1px solid rgba(255,255,255,.4)}
-.btn-dict:hover{background:rgba(255,255,255,.25)}
-.btn-dict.dict-active{background:white;color:#764ba2}
-.main-content{display:flex;flex:1;overflow:hidden}
-.sidebar{width:300px;background:#f8f9fa;border-right:1px solid #e0e0e0;display:flex;flex-direction:column;overflow:hidden}
-.sidebar-tabs{display:flex;background:#e9ecef;border-bottom:1px solid #dee2e6}
-.tab{flex:1;padding:15px;text-align:center;cursor:pointer;font-weight:500;color:#6c757d;transition:all .3s;border-bottom:3px solid transparent}
-.tab.active{color:#667eea;background:white;border-bottom-color:#667eea}
-.tab-content{flex:1;overflow-y:auto;padding:20px}
-.folder-bar{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:8px}
-.folder-select{flex:1 1 120px;min-width:120px;padding:6px 8px;border-radius:8px;border:1px solid #ced4da;font-size:12px;background:#fff}
-.folder-pill{flex:0 0 auto;padding:4px 8px;border-radius:999px;background:#e9ecef;font-size:11px;cursor:pointer;transition:all .2s;white-space:nowrap;border:none}
-.folder-pill:hover{background:#dee2e6}
-#folderPalette{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px}
-.library-item{background:white;padding:15px;margin-bottom:10px;border-radius:10px;cursor:pointer;transition:all .3s;border:2px solid #e0e0e0;user-select:none;position:relative;display:flex;gap:12px;align-items:flex-start}
-.library-item:hover{border-color:#667eea;transform:translateX(5px);box-shadow:0 5px 15px rgba(102,126,234,.2)}
-.library-item.active{border-color:#667eea;background:#f0f4ff}
-.library-item.dragging{opacity:.6;box-shadow:0 0 0 2px #764ba2}
-.library-item.drag-over{border-color:#764ba2;box-shadow:0 0 0 2px #667eea;transform:translateX(5px) scale(1.02)}
-.library-item-main{flex:1}
-.library-item-title{font-weight:600;color:#333;margin-bottom:5px;font-size:14px}
-.library-item-progress{font-size:12px;color:#6c757d;margin-bottom:8px}
-.progress-bar{height:4px;background:#e0e0e0;border-radius:2px;overflow:hidden}
-.progress-fill{height:100%;background:linear-gradient(90deg,#667eea,#764ba2);transition:width .3s}
-.library-item-right{display:flex;flex-direction:column;gap:4px}
-.book-menu-btn{background:transparent;border:none;cursor:pointer;font-size:18px;line-height:1;padding:2px 4px;color:#666}
-.book-menu-btn:hover{color:#667eea}
-.book-menu-dropdown{position:absolute;right:10px;top:35px;background:white;border:1px solid #dee2e6;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.15);min-width:180px;z-index:100;display:none}
-.book-menu-dropdown.open{display:block}
-.book-menu-item{padding:8px 10px;font-size:13px;cursor:pointer}
-.book-menu-item:hover{background:#f1f3f5}
-.book-menu-item.disabled{color:#adb5bd;cursor:default}
-.toc-item{padding:10px;cursor:pointer;border-radius:5px;margin-bottom:5px;transition:all .2s;font-size:14px}
-.toc-item:hover{background:#e9ecef}
-.viewer-container{flex:1;display:flex;flex-direction:column;background:#525659;min-width:0}
-.toolbar{background:#2c3034;padding:15px 20px;display:flex;justify-content:space-between;align-items:center;color:white}
-.toolbar-left,.toolbar-right{display:flex;gap:10px;align-items:center}
-.toolbar-btn{background:#3c4044;color:white;border:none;padding:8px 15px;border-radius:5px;cursor:pointer;font-size:14px;transition:all .2s}
-.toolbar-btn:hover{background:#4c5054}
-.toolbar-btn:disabled{opacity:.5;cursor:not-allowed}
-.page-info{display:flex;align-items:center;gap:10px}
-.page-input{width:60px;padding:5px;border-radius:5px;border:1px solid #5c6064;background:#3c4044;color:white;text-align:center}
-.pdf-viewer{flex:1;overflow-y:auto;display:flex;justify-content:center;padding:20px}
-.pdf-canvas-container{background:white;box-shadow:0 5px 20px rgba(0,0,0,.3)}
-.loading-skeleton{background:#e0e0e0;box-shadow:0 5px 20px rgba(0,0,0,.3);position:relative;overflow:hidden}
-.loading-skeleton::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(102,126,234,.15),transparent);animation:shimmer 1s infinite}
-@keyframes shimmer{to{left:100%}}
-.load-bar{position:fixed;top:0;left:0;height:3px;background:linear-gradient(90deg,#667eea,#764ba2);transition:width .2s ease;z-index:9999;border-radius:0 2px 2px 0}
-.modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.7);justify-content:center;align-items:center;z-index:1000}
-.modal.active{display:flex}
-.modal-content{background:white;padding:30px;border-radius:15px;width:90%;max-width:500px;box-shadow:0 10px 40px rgba(0,0,0,.3)}
-.modal-header{font-size:24px;font-weight:600;margin-bottom:20px;color:#333}
-.form-group{margin-bottom:20px}
-.form-label{display:block;margin-bottom:8px;font-weight:500;color:#555}
-.form-input{width:100%;padding:12px;border:2px solid #e0e0e0;border-radius:8px;font-size:14px;transition:all .3s}
-.form-input:focus{outline:none;border-color:#667eea}
-.modal-buttons{display:flex;gap:10px;justify-content:flex-end}
-.empty-state{text-align:center;padding:40px 20px;color:#6c757d}
-.zoom-control{display:flex;align-items:center;gap:10px}
-.delete-btn{background:#dc3545;color:white;border:none;padding:5px 10px;border-radius:5px;cursor:pointer;font-size:12px;margin-top:5px}
-.delete-btn:hover{background:#c82333}
-.cache-badge{display:inline-block;font-size:9px;background:#28a745;color:white;padding:1px 5px;border-radius:999px;margin-left:4px;vertical-align:middle;font-weight:600;letter-spacing:.3px}
-::-webkit-scrollbar{width:10px}
-::-webkit-scrollbar-track{background:#f1f1f1}
-::-webkit-scrollbar-thumb{background:#888;border-radius:5px}
-::-webkit-scrollbar-thumb:hover{background:#555}
-.dict-panel{width:0;min-width:0;background:#fafafa;border-left:1px solid #e0e0e0;display:flex;flex-direction:column;overflow:hidden;transition:width .3s ease,min-width .3s ease;flex-shrink:0}
-.dict-panel.open{width:360px;min-width:320px}
-.dict-header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;padding:16px 18px;display:flex;align-items:center;gap:10px;flex-shrink:0}
-.dict-header-title{font-size:15px;font-weight:600;flex:1}
-.dict-close-btn{background:rgba(255,255,255,.2);border:none;color:white;cursor:pointer;border-radius:6px;padding:4px 10px;font-size:16px;line-height:1}
-.dict-close-btn:hover{background:rgba(255,255,255,.35)}
-.dict-search-wrap{padding:14px 16px;border-bottom:1px solid #e0e0e0;flex-shrink:0;display:flex;gap:8px}
-.dict-input{flex:1;padding:9px 12px;border:1.5px solid #d0d0d0;border-radius:8px;font-size:14px;background:white;outline:none;transition:border-color .2s}
-.dict-input:focus{border-color:#667eea}
-.dict-lookup-btn{padding:9px 14px;background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap}
-.dict-lookup-btn:hover{opacity:.9}
-.dict-body{flex:1;overflow-y:auto;padding:16px}
-.dict-empty{text-align:center;padding:40px 20px;color:#999}
-.dict-empty-icon{font-size:36px;margin-bottom:12px;color:#ccc}
-.dict-word-heading{font-size:22px;font-weight:700;color:#222;margin-bottom:2px}
-.dict-phonetic{font-size:14px;color:#764ba2;font-style:italic;margin-bottom:10px}
-.dict-audio-btn{background:none;border:1.5px solid #764ba2;color:#764ba2;border-radius:6px;padding:3px 10px;font-size:12px;cursor:pointer;margin-left:8px;vertical-align:middle}
-.dict-audio-btn:hover{background:#f0eaff}
-.dict-section{margin-bottom:16px}
-.dict-pos-badge{display:inline-block;font-size:11px;font-weight:600;background:#ede9fe;color:#5b21b6;padding:2px 9px;border-radius:999px;margin-bottom:8px;letter-spacing:.4px}
-.dict-definition{font-size:14px;color:#333;margin-bottom:6px;padding-left:12px;border-left:3px solid #c4b5fd}
-.dict-example{font-size:13px;color:#666;font-style:italic;padding-left:12px;margin-top:2px;margin-bottom:8px}
-.dict-divider{height:1px;background:#eee;margin:12px 0}
-.dict-meta-label{font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
-.dict-synonyms{display:flex;flex-wrap:wrap;gap:6px}
-.dict-syn-pill{font-size:12px;background:#f0f4ff;color:#667eea;border:1px solid #c7d2fe;border-radius:999px;padding:3px 10px;cursor:pointer}
-.dict-syn-pill:hover{background:#e0e7ff}
-.dict-error{color:#c0392b;font-size:14px;padding:12px;background:#fef2f2;border-radius:8px;border:1px solid #fecaca;margin-bottom:14px}
-.dict-loading{text-align:center;padding:30px;color:#667eea;font-size:14px}
-.dict-spinner{display:inline-block;width:20px;height:20px;border:2px solid #e0e0e0;border-top-color:#667eea;border-radius:50%;animation:spin .7s linear infinite;margin-bottom:8px}
-@keyframes spin{to{transform:rotate(360deg)}}
-.dict-history{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
-.dict-hist-pill{font-size:11px;background:#f3f4f6;color:#555;border:1px solid #d1d5db;border-radius:999px;padding:2px 8px;cursor:pointer}
-.dict-hist-pill:hover{background:#e5e7eb}
-.dict-origin{font-size:13px;color:#555;font-style:italic;background:#f8f8ff;border-left:3px solid #a5b4fc;padding:8px 10px;border-radius:0 6px 6px 0;margin-top:4px}
-.dict-source{margin-top:14px;font-size:11px;color:#bbb}
-.dict-source a{color:#bbb}
-</style>
+    <meta name="google-site-verification" content="E7knuFVZA_dGkubXqO4pMzNhFaQk7aSImN985b-rjGs" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Continua | PDF Reader Pro</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 40px);
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 { font-size: 28px; font-weight: 600; }
+        .header-buttons { display: flex; gap: 10px; }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-primary { background: white; color: #667eea; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+        .btn-secondary { background: rgba(255,255,255,0.2); color: white; border: 1px solid white; }
+        .btn-secondary:hover { background: rgba(255,255,255,0.3); }
+        .btn-dict { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.4); }
+        .btn-dict:hover { background: rgba(255,255,255,0.25); }
+        .btn-dict.dict-active { background: white; color: #764ba2; }
+
+        .main-content { display: flex; flex: 1; overflow: hidden; }
+
+        .sidebar {
+            width: 300px;
+            background: #f8f9fa;
+            border-right: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .sidebar-tabs { display: flex; background: #e9ecef; border-bottom: 1px solid #dee2e6; }
+
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 500;
+            color: #6c757d;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab.active { color: #667eea; background: white; border-bottom-color: #667eea; }
+
+        .tab-content { flex: 1; overflow-y: auto; padding: 20px; }
+
+        .folder-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .folder-select {
+            flex: 1 1 120px;
+            min-width: 120px;
+            padding: 6px 8px;
+            border-radius: 8px;
+            border: 1px solid #ced4da;
+            font-size: 12px;
+            background: #ffffff;
+        }
+
+        .folder-pill {
+            flex: 0 0 auto;
+            padding: 4px 8px;
+            border-radius: 999px;
+            background: #e9ecef;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .folder-pill:hover { background: #dee2e6; }
+
+        #folderPalette { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+
+        .library-item {
+            background: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid #e0e0e0;
+            user-select: none;
+            position: relative;
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .library-item:hover { border-color: #667eea; transform: translateX(5px); box-shadow: 0 5px 15px rgba(102,126,234,0.2); }
+        .library-item.active { border-color: #667eea; background: #f0f4ff; }
+        .library-item.dragging { opacity: 0.6; box-shadow: 0 0 0 2px #764ba2; }
+        .library-item.drag-over { border-color: #764ba2; box-shadow: 0 0 0 2px #667eea; transform: translateX(5px) scale(1.02); }
+
+        .library-item-main { flex: 1; }
+        .library-item-title { font-weight: 600; color: #333; margin-bottom: 5px; font-size: 14px; }
+        .library-item-progress { font-size: 12px; color: #6c757d; margin-bottom: 8px; }
+
+        .progress-bar { height: 4px; background: #e0e0e0; border-radius: 2px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); transition: width 0.3s; }
+
+        .library-item-right { display: flex; flex-direction: column; gap: 4px; }
+
+        .book-menu-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-size: 18px;
+            line-height: 1;
+            padding: 2px 4px;
+            color: #666;
+        }
+        .book-menu-btn:hover { color: #667eea; }
+
+        .book-menu-dropdown {
+            position: absolute;
+            right: 10px;
+            top: 35px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            min-width: 180px;
+            z-index: 100;
+            display: none;
+        }
+        .book-menu-dropdown.open { display: block; }
+        .book-menu-item { padding: 8px 10px; font-size: 13px; cursor: pointer; }
+        .book-menu-item:hover { background: #f1f3f5; }
+        .book-menu-item.disabled { color: #adb5bd; cursor: default; }
+
+        .toc-item {
+            padding: 10px;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+        .toc-item:hover { background: #e9ecef; }
+
+        .viewer-container { flex: 1; display: flex; flex-direction: column; background: #525659; min-width: 0; }
+
+        .toolbar {
+            background: #2c3034;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+        }
+
+        .toolbar-left, .toolbar-right { display: flex; gap: 10px; align-items: center; }
+
+        .toolbar-btn {
+            background: #3c4044;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+        }
+        .toolbar-btn:hover { background: #4c5054; }
+        .toolbar-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .page-info { display: flex; align-items: center; gap: 10px; }
+
+        .page-input {
+            width: 60px;
+            padding: 5px;
+            border-radius: 5px;
+            border: 1px solid #5c6064;
+            background: #3c4044;
+            color: white;
+            text-align: center;
+        }
+
+        .pdf-viewer {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .pdf-canvas-container { background: white; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
+
+        .loading-skeleton {
+            background: white;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        .loading-skeleton::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(102,126,234,0.15), transparent);
+            animation: shimmer 1s infinite;
+        }
+        @keyframes shimmer { to { left: 100%; } }
+
+        .load-bar {
+            position: fixed;
+            top: 0; left: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.2s ease;
+            z-index: 9999;
+            border-radius: 0 2px 2px 0;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal.active { display: flex; }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        .modal-header { font-size: 24px; font-weight: 600; margin-bottom: 20px; color: #333; }
+        .form-group { margin-bottom: 20px; }
+        .form-label { display: block; margin-bottom: 8px; font-weight: 500; color: #555; }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .form-input:focus { outline: none; border-color: #667eea; }
+
+        .modal-buttons { display: flex; gap: 10px; justify-content: flex-end; }
+
+        .empty-state { text-align: center; padding: 40px 20px; color: #6c757d; }
+        .empty-state-icon { font-size: 48px; margin-bottom: 15px; }
+
+        .zoom-control { display: flex; align-items: center; gap: 10px; }
+
+        .delete-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        .delete-btn:hover { background: #c82333; }
+
+        .cache-badge {
+            display: inline-block;
+            font-size: 9px;
+            background: #28a745;
+            color: white;
+            padding: 1px 5px;
+            border-radius: 999px;
+            margin-left: 4px;
+            vertical-align: middle;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #888; border-radius: 5px; }
+        ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        .dict-panel {
+            width: 0;
+            min-width: 0;
+            background: #fafafa;
+            border-left: 1px solid #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: width 0.3s ease, min-width 0.3s ease;
+            flex-shrink: 0;
+        }
+        .dict-panel.open {
+            width: 360px;
+            min-width: 320px;
+        }
+        .dict-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .dict-header-title { font-size: 15px; font-weight: 600; flex: 1; }
+        .dict-close-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            cursor: pointer;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 16px;
+            line-height: 1;
+        }
+        .dict-close-btn:hover { background: rgba(255,255,255,0.35); }
+        .dict-search-wrap {
+            padding: 14px 16px;
+            border-bottom: 1px solid #e0e0e0;
+            flex-shrink: 0;
+            display: flex;
+            gap: 8px;
+        }
+        .dict-input {
+            flex: 1;
+            padding: 9px 12px;
+            border: 1.5px solid #d0d0d0;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .dict-input:focus { border-color: #667eea; }
+        .dict-lookup-btn {
+            padding: 9px 14px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .dict-lookup-btn:hover { opacity: 0.9; }
+        .dict-body { flex: 1; overflow-y: auto; padding: 16px; }
+        .dict-empty { text-align: center; padding: 40px 20px; color: #999; }
+        .dict-empty-icon { font-size: 36px; margin-bottom: 12px; color: #ccc; }
+        .dict-word-heading { font-size: 22px; font-weight: 700; color: #222; margin-bottom: 2px; }
+        .dict-phonetic { font-size: 14px; color: #764ba2; font-style: italic; margin-bottom: 10px; }
+        .dict-audio-btn {
+            background: none;
+            border: 1.5px solid #764ba2;
+            color: #764ba2;
+            border-radius: 6px;
+            padding: 3px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        .dict-audio-btn:hover { background: #f0eaff; }
+        .dict-section { margin-bottom: 16px; }
+        .dict-pos-badge {
+            display: inline-block;
+            font-size: 11px;
+            font-weight: 600;
+            background: #ede9fe;
+            color: #5b21b6;
+            padding: 2px 9px;
+            border-radius: 999px;
+            margin-bottom: 8px;
+            letter-spacing: 0.4px;
+        }
+        .dict-definition {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 6px;
+            padding-left: 12px;
+            border-left: 3px solid #c4b5fd;
+        }
+        .dict-example {
+            font-size: 13px;
+            color: #666;
+            font-style: italic;
+            padding-left: 12px;
+            margin-top: 2px;
+            margin-bottom: 8px;
+        }
+        .dict-divider { height: 1px; background: #eee; margin: 12px 0; }
+        .dict-meta-label {
+            font-size: 11px;
+            font-weight: 600;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+        .dict-synonyms { display: flex; flex-wrap: wrap; gap: 6px; }
+        .dict-syn-pill {
+            font-size: 12px;
+            background: #f0f4ff;
+            color: #667eea;
+            border: 1px solid #c7d2fe;
+            border-radius: 999px;
+            padding: 3px 10px;
+            cursor: pointer;
+        }
+        .dict-syn-pill:hover { background: #e0e7ff; }
+        .dict-error {
+            color: #c0392b;
+            font-size: 14px;
+            padding: 12px;
+            background: #fef2f2;
+            border-radius: 8px;
+            border: 1px solid #fecaca;
+            margin-bottom: 14px;
+        }
+        .dict-loading { text-align: center; padding: 30px; color: #667eea; font-size: 14px; }
+        .dict-spinner {
+            display: inline-block;
+            width: 20px; height: 20px;
+            border: 2px solid #e0e0e0;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            margin-bottom: 8px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .dict-history { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+        .dict-hist-pill {
+            font-size: 11px;
+            background: #f3f4f6;
+            color: #555;
+            border: 1px solid #d1d5db;
+            border-radius: 999px;
+            padding: 2px 8px;
+            cursor: pointer;
+        }
+        .dict-hist-pill:hover { background: #e5e7eb; }
+        .dict-origin {
+            font-size: 13px;
+            color: #555;
+            font-style: italic;
+            background: #f8f8ff;
+            border-left: 3px solid #a5b4fc;
+            padding: 8px 10px;
+            border-radius: 0 6px 6px 0;
+            margin-top: 4px;
+        }
+        .dict-source {
+            margin-top: 14px;
+            font-size: 11px;
+            color: #bbb;
+        }
+        .dict-source a { color: #bbb; }
+    </style>
 </head>
 <body>
 <div class="load-bar" id="loadBar" style="width:0"></div>
+
 <div class="container">
-  <div class="header">
-    <h1>Continua | PDF Reader PRO</h1>
-    <div class="header-buttons">
-      <button class="btn btn-primary" onclick="openAddModal()">+ Add PDF</button>
-      <button class="btn btn-dict" id="dictToggleBtn" onclick="toggleDictPanel()">Dictionary</button>
-      <button class="btn btn-secondary" onclick="toggleSidebar()">Menu</button>
+    <div class="header">
+        <h1>Continua | PDF Reader PRO</h1>
+        <div class="header-buttons">
+            <button class="btn btn-primary" onclick="openAddModal()">+ Add PDF</button>
+            <button class="btn btn-dict" id="dictToggleBtn" onclick="toggleDictPanel()">Dictionary</button>
+            <button class="btn btn-secondary" onclick="toggleSidebar()">Menu</button>
+        </div>
     </div>
-  </div>
-  <div class="main-content">
-    <div class="sidebar" id="sidebar">
-      <div class="sidebar-tabs">
-        <div class="tab active" onclick="switchTab('library')">Library</div>
-        <div class="tab" onclick="switchTab('toc')">Contents</div>
-      </div>
-      <div class="tab-content" id="libraryTab">
-        <div class="folder-bar">
-          <select id="folderSelect" class="folder-select" onchange="changeFolder()"></select>
-          <button class="folder-pill" onclick="addFolder()">+F</button>
-          <button class="folder-pill" onclick="renameFolder()">Rename</button>
-          <button class="folder-pill" onclick="deleteFolder()">Del</button>
+
+    <div class="main-content">
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-tabs">
+                <div class="tab active" onclick="switchTab('library')">Library</div>
+                <div class="tab" onclick="switchTab('toc')">Contents</div>
+            </div>
+            <div class="tab-content" id="libraryTab">
+                <div class="folder-bar">
+                    <select id="folderSelect" class="folder-select" onchange="changeFolder()"></select>
+                    <button class="folder-pill" onclick="addFolder()">+F</button>
+                    <button class="folder-pill" onclick="renameFolder()">Rename</button>
+                    <button class="folder-pill" onclick="deleteFolder()">Del</button>
+                </div>
+                <div id="folderPalette"></div>
+                <div id="libraryList"></div>
+            </div>
+            <div class="tab-content" id="tocTab" style="display: none;">
+                <div id="tocList"></div>
+            </div>
         </div>
-        <div id="folderPalette"></div>
-        <div id="libraryList"></div>
-      </div>
-      <div class="tab-content" id="tocTab" style="display:none">
-        <div id="tocList"></div>
-      </div>
+
+        <div class="viewer-container">
+            <div class="toolbar">
+                <div class="toolbar-left">
+                    <button class="toolbar-btn" onclick="prevPage()" id="prevBtn">&#8592; Previous</button>
+                    <div class="page-info">
+                        <input type="number" class="page-input" id="pageInput" value="1" min="1" onchange="goToPage()">
+                        <span>/ <span id="totalPages">0</span></span>
+                    </div>
+                    <button class="toolbar-btn" onclick="nextPage()" id="nextBtn">Next &#8594;</button>
+                </div>
+                <div class="toolbar-right">
+                    <div class="zoom-control">
+                        <button class="toolbar-btn" onclick="zoomOut()">-</button>
+                        <span id="zoomLevel">100%</span>
+                        <button class="toolbar-btn" onclick="zoomIn()">+</button>
+                    </div>
+                    <button class="toolbar-btn" onclick="toggleFullscreen()" id="fullscreenBtn">Fullscreen</button>
+                </div>
+            </div>
+            <div class="pdf-viewer" id="pdfViewer">
+                <div class="empty-state">
+                    <div class="empty-state-icon"></div>
+                    <h3>No PDF Loaded</h3>
+                    <p>Click "Add PDF" to load a document from URL</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="dict-panel" id="dictPanel">
+            <div class="dict-header">
+                <span class="dict-header-title">Dictionary</span>
+                <button class="dict-close-btn" onclick="toggleDictPanel()">&#215;</button>
+            </div>
+            <div class="dict-search-wrap">
+                <input
+                    type="text"
+                    class="dict-input"
+                    id="dictInput"
+                    placeholder="Type a word..."
+                    onkeydown="if(event.key==='Enter') lookupWord()"
+                    autocomplete="off"
+                    autocorrect="off"
+                    spellcheck="false"
+                >
+                <button class="dict-lookup-btn" onclick="lookupWord()">Look up</button>
+            </div>
+            <div class="dict-body" id="dictBody">
+                <div class="dict-empty">
+                    <div class="dict-empty-icon">A</div>
+                    <p style="font-size:13px;color:#aaa;line-height:1.6;">
+                        Enter any word to get its full definition, pronunciation, part of speech, etymology, synonyms, antonyms, and example sentences.
+                    </p>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="viewer-container">
-      <div class="toolbar">
-        <div class="toolbar-left">
-          <button class="toolbar-btn" onclick="prevPage()" id="prevBtn">&#8592; Previous</button>
-          <div class="page-info">
-            <input type="number" class="page-input" id="pageInput" value="1" min="1" onchange="goToPage()">
-            <span>/ <span id="totalPages">0</span></span>
-          </div>
-          <button class="toolbar-btn" onclick="nextPage()" id="nextBtn">Next &#8594;</button>
-        </div>
-        <div class="toolbar-right">
-          <div class="zoom-control">
-            <button class="toolbar-btn" onclick="zoomOut()">-</button>
-            <span id="zoomLevel">100%</span>
-            <button class="toolbar-btn" onclick="zoomIn()">+</button>
-          </div>
-          <button class="toolbar-btn" onclick="toggleFullscreen()" id="fullscreenBtn">Fullscreen</button>
-        </div>
-      </div>
-      <div class="pdf-viewer" id="pdfViewer">
-        <div class="empty-state">
-          <h3>No PDF Loaded</h3>
-          <p>Click "Add PDF" to load a document from URL</p>
-        </div>
-      </div>
-    </div>
-    <div class="dict-panel" id="dictPanel">
-      <div class="dict-header">
-        <span class="dict-header-title">Dictionary</span>
-        <button class="dict-close-btn" onclick="toggleDictPanel()">&#215;</button>
-      </div>
-      <div class="dict-search-wrap">
-        <input type="text" class="dict-input" id="dictInput" placeholder="Type a word..."
-          onkeydown="if(event.key==='Enter') lookupWord()" autocomplete="off" autocorrect="off" spellcheck="false">
-        <button class="dict-lookup-btn" onclick="lookupWord()">Look up</button>
-      </div>
-      <div class="dict-body" id="dictBody">
-        <div class="dict-empty">
-          <div class="dict-empty-icon">A</div>
-          <p style="font-size:13px;color:#aaa;line-height:1.6">Enter any word to get its full definition, pronunciation, part of speech, etymology, synonyms, antonyms, and example sentences.</p>
-        </div>
-      </div>
-    </div>
-  </div>
 </div>
-<div class="modal" id="addModal" onclick="if(event.target===this)closeAddModal()">
-  <div class="modal-content">
-    <div class="modal-header">Add PDF Document
-      <button style="float:right;background:none;border:none;font-size:24px;cursor:pointer;color:#999" onclick="closeAddModal()">&#215;</button>
+
+<div class="modal" id="addModal" onclick="if(event.target === this) closeAddModal()">
+    <div class="modal-content">
+        <div class="modal-header">
+            Add PDF Document
+            <button style="float:right;background:none;border:none;font-size:24px;cursor:pointer;color:#999" onclick="closeAddModal()">&#215;</button>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Document Name</label>
+            <input type="text" class="form-input" id="pdfName" placeholder="Enter document name">
+        </div>
+        <div class="form-group">
+            <label class="form-label">PDF URL</label>
+            <input type="text" class="form-input" id="pdfUrl" placeholder="https://example.com/document.pdf">
+        </div>
+        <div class="modal-buttons">
+            <button class="btn btn-secondary" onclick="closeAddModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="addPdf()">Add to Library</button>
+        </div>
     </div>
-    <div class="form-group">
-      <label class="form-label">Document Name</label>
-      <input type="text" class="form-input" id="pdfName" placeholder="Enter document name">
-    </div>
-    <div class="form-group">
-      <label class="form-label">PDF URL</label>
-      <input type="text" class="form-input" id="pdfUrl" placeholder="https://example.com/document.pdf">
-    </div>
-    <div class="modal-buttons">
-      <button class="btn btn-secondary" onclick="closeAddModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="addPdf()">Add to Library</button>
-    </div>
-  </div>
 </div>
+
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-// ── SESSION DOC CACHE ─────────────────────────────────────────────────────────
-const sessionDocCache = new Map();
-
-// ── RENDER CACHE ──────────────────────────────────────────────────────────────
-// Stores ImageBitmap (or pixel data) so the same canvas isn't moved out of DOM.
-// We paint by drawing onto a fresh canvas each time — no stale-reference bug.
-const renderCache = new Map(); // key -> ImageData
+// ─── CONSTANTS ────────────────────────────────────────────────────────────────
+const cMapUrl = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/';
+const PDF_OPTIONS_BASE = { cMapUrl, cMapPacked: true, disableAutoFetch: false, disableStream: false };
 const RENDER_CACHE_MAX = 30;
+const FETCH_TIMEOUT_MS = 20000;      // per-proxy fetch timeout
+const PDFJS_PARSE_TIMEOUT_MS = 25000; // hard cap on pdfjsLib.getDocument().promise
+
+// ─── SESSION CACHE ────────────────────────────────────────────────────────────
+const sessionDocCache = new Map(); // bookId → pdfDoc
+
+// ─── RENDER CACHE ─────────────────────────────────────────────────────────────
+const renderCache = new Map();     // cacheKey → HTMLCanvasElement
 const renderCacheOrder = [];
 
-// ── INDEXEDDB PDF BINARY CACHE ────────────────────────────────────────────────
-const IDB_NAME = 'continua_pdf_cache', IDB_STORE = 'pdfs';
+// ─── PRELOAD ──────────────────────────────────────────────────────────────────
+let preloadTimeout = null;
+
+// ─── LOAD BAR ─────────────────────────────────────────────────────────────────
+function setLoadBar(pct) {
+    const bar = document.getElementById('loadBar');
+    bar.style.width = pct + '%';
+    if (pct >= 100) setTimeout(() => { bar.style.width = '0'; }, 400);
+}
+
+// ─── HELPER: validate PDF magic bytes ────────────────────────────────────────
+// A valid PDF always starts with %PDF- (hex: 25 50 44 46 2D).
+// Proxies sometimes return an HTML error page with HTTP 200; this check
+// catches those immediately rather than letting pdfjsLib hang on bad data.
+function isPdfBytes(buffer) {
+    if (!buffer || buffer.byteLength < 5) return false;
+    const bytes = new Uint8Array(buffer, 0, 5);
+    return bytes[0] === 0x25 && bytes[1] === 0x50 &&
+           bytes[2] === 0x44 && bytes[3] === 0x46 && bytes[4] === 0x2D;
+}
+
+// ─── PERSISTENT PDF BINARY CACHE (IndexedDB) ─────────────────────────────────
+const IDB_NAME = 'continua_pdf_cache';
+const IDB_STORE = 'pdfs';
 let idb = null;
-const idbReady = new Promise(resolve => {
-  const req = indexedDB.open(IDB_NAME, 1);
-  req.onupgradeneeded = e => {
-    const db = e.target.result;
-    if (!db.objectStoreNames.contains(IDB_STORE)) {
-      db.createObjectStore(IDB_STORE, {keyPath:'bookId'})
-        .createIndex('accessed','accessed',{unique:false});
-    }
-  };
-  req.onsuccess = e => { idb = e.target.result; resolve(idb); };
-  req.onerror = () => resolve(null);
+
+const idbReady = new Promise((resolve) => {
+    try {
+        const req = indexedDB.open(IDB_NAME, 1);
+        req.onupgradeneeded = e => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(IDB_STORE)) {
+                const store = db.createObjectStore(IDB_STORE, { keyPath: 'bookId' });
+                store.createIndex('accessed', 'accessed', { unique: false });
+            }
+        };
+        req.onsuccess = e => { idb = e.target.result; resolve(idb); };
+        req.onerror = () => resolve(null);
+    } catch(_) { resolve(null); }
 });
 
 async function idbGet(bookId) {
-  try {
-    const db = await idbReady; if (!db) return null;
-    return new Promise(resolve => {
-      const req = db.transaction(IDB_STORE,'readonly').objectStore(IDB_STORE).get(String(bookId));
-      req.onsuccess = () => resolve(req.result || null);
-      req.onerror = () => resolve(null);
-    });
-  } catch(_) { return null; }
+    try {
+        const db = await idbReady;
+        if (!db) return null;
+        return new Promise((resolve) => {
+            const tx = db.transaction(IDB_STORE, 'readonly');
+            const req = tx.objectStore(IDB_STORE).get(String(bookId));
+            req.onsuccess = () => resolve(req.result || null);
+            req.onerror = () => resolve(null);
+        });
+    } catch(_) { return null; }
 }
 
 async function idbPut(bookId, arrayBuffer) {
-  try {
-    const db = await idbReady; if (!db) return;
-    const all = await new Promise(resolve => {
-      const req = db.transaction(IDB_STORE,'readonly').objectStore(IDB_STORE).index('accessed').getAllKeys();
-      req.onsuccess = () => resolve(req.result);
-      req.onerror = () => resolve([]);
-    });
-    const tx = db.transaction(IDB_STORE,'readwrite');
-    const store = tx.objectStore(IDB_STORE);
-    if (all.length >= 20) store.delete(all[0]);
-    store.put({bookId:String(bookId), data:arrayBuffer, accessed:Date.now(), size:arrayBuffer.byteLength});
-  } catch(_) {}
+    try {
+        const db = await idbReady;
+        if (!db) return;
+        const allKeys = await new Promise(resolve => {
+            const tx = db.transaction(IDB_STORE, 'readonly');
+            const req = tx.objectStore(IDB_STORE).index('accessed').getAllKeys();
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => resolve([]);
+        });
+        const tx = db.transaction(IDB_STORE, 'readwrite');
+        const store = tx.objectStore(IDB_STORE);
+        if (allKeys.length >= 20) store.delete(allKeys[0]);
+        store.put({ bookId: String(bookId), data: arrayBuffer, accessed: Date.now(), size: arrayBuffer.byteLength });
+    } catch(_) {}
 }
 
 async function idbDelete(bookId) {
-  try {
-    const db = await idbReady; if (!db) return;
-    db.transaction(IDB_STORE,'readwrite').objectStore(IDB_STORE).delete(String(bookId));
-  } catch(_) {}
+    try {
+        const db = await idbReady;
+        if (!db) return;
+        const tx = db.transaction(IDB_STORE, 'readwrite');
+        tx.objectStore(IDB_STORE).delete(String(bookId));
+    } catch (_) {}
 }
 
 function idbTouch(bookId) {
-  idbReady.then(db => {
-    if (!db) return;
-    const tx = db.transaction(IDB_STORE,'readwrite');
-    const store = tx.objectStore(IDB_STORE);
-    const req = store.get(String(bookId));
-    req.onsuccess = () => { if (req.result) { req.result.accessed = Date.now(); store.put(req.result); } };
-  }).catch(()=>{});
+    idbReady.then(db => {
+        if (!db) return;
+        const tx = db.transaction(IDB_STORE, 'readwrite');
+        const store = tx.objectStore(IDB_STORE);
+        const req = store.get(String(bookId));
+        req.onsuccess = () => { if (req.result) { req.result.accessed = Date.now(); store.put(req.result); } };
+    }).catch(() => {});
 }
 
 async function idbGetCachedIds() {
-  try {
-    const db = await idbReady; if (!db) return new Set();
-    return new Promise(resolve => {
-      const req = db.transaction(IDB_STORE,'readonly').objectStore(IDB_STORE).getAllKeys();
-      req.onsuccess = () => resolve(new Set(req.result.map(String)));
-      req.onerror = () => resolve(new Set());
-    });
-  } catch(_) { return new Set(); }
+    try {
+        const db = await idbReady;
+        if (!db) return new Set();
+        return new Promise(resolve => {
+            const tx = db.transaction(IDB_STORE, 'readonly');
+            const req = tx.objectStore(IDB_STORE).getAllKeys();
+            req.onsuccess = () => resolve(new Set(req.result.map(String)));
+            req.onerror = () => resolve(new Set());
+        });
+    } catch (_) { return new Set(); }
 }
 
 let cachedBookIds = new Set();
 idbGetCachedIds().then(ids => { cachedBookIds = ids; renderLibrary(); });
 
-// ── STATE ─────────────────────────────────────────────────────────────────────
+// ─── STATE ────────────────────────────────────────────────────────────────────
 let library = JSON.parse(localStorage.getItem('pdfLibrary') || '[]');
-let currentPage = 1, totalPages = 0, scale = 1.5;
-let pdfDoc = null, currentPdfId = null;
-let renderInProgress = false, pendingRender = null;
-let preloadTimeout = null;
+let currentPage = 1;
+let totalPages = 0;
+let scale = 1.5;
+let pdfDoc = null;
+let currentPdfId = null;
+let renderInProgress = false;
+let pendingRender = null;
 
 let folders = JSON.parse(localStorage.getItem('pdfFolders') || '[]');
 let activeFolder = localStorage.getItem('pdfActiveFolder') || 'All';
 
-if (Array.isArray(folders) && typeof folders[0] === 'string')
-  folders = folders.map(name => ({id:'fld_'+name, name, color:'#e9ecef', icon:''}));
-if (!folders.length) { folders = [{id:'fld_All',name:'All',color:'#e9ecef',icon:''}]; activeFolder = 'All'; }
+if (Array.isArray(folders) && typeof folders[0] === 'string') {
+    folders = folders.map(name => ({ id: 'fld_' + name, name, color: '#e9ecef', icon: '' }));
+}
+if (!folders.length) {
+    folders = [{ id: 'fld_All', name: 'All', color: '#e9ecef', icon: '' }];
+    activeFolder = 'All';
+}
 if (!activeFolder) activeFolder = 'All';
 
 library.forEach(b => {
-  if (!Array.isArray(b.folders)) { b.folders = b.folder ? [b.folder] : ['All']; delete b.folder; }
-  if (!b.folders.includes('All')) b.folders.push('All');
+    if (!Array.isArray(b.folders)) {
+        b.folders = b.folder ? [b.folder] : ['All'];
+        delete b.folder;
+    }
+    if (!b.folders.includes('All')) b.folders.push('All');
 });
+
 localStorage.setItem('pdfLibrary', JSON.stringify(library));
 localStorage.setItem('pdfFolders', JSON.stringify(folders));
 localStorage.setItem('pdfActiveFolder', activeFolder);
 
 let dragStartIndex = null, dragCurrentIndex = null, isDraggingLibraryItem = false;
 
-// ── LOAD BAR ──────────────────────────────────────────────────────────────────
-function setLoadBar(pct) {
-  const bar = document.getElementById('loadBar');
-  bar.style.width = pct + '%';
-  if (pct >= 100) setTimeout(() => { bar.style.width = '0'; }, 400);
+// ─── PROXY LIST ───────────────────────────────────────────────────────────────
+function getProxies(url) {
+    return [
+        url,
+        `https://corsproxy.io/?${encodeURIComponent(url)}`,
+        `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
+    ];
 }
 
-// ── FETCH HELPERS ─────────────────────────────────────────────────────────────
-const cMapUrl = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/';
-const PDF_OPTS = {cMapUrl, cMapPacked:true, disableAutoFetch:false, disableStream:false};
-
-function withTimeout(promise, ms) {
-  return new Promise((resolve, reject) => {
-    const t = setTimeout(() => reject(new Error('timeout')), ms);
-    promise.then(v => { clearTimeout(t); resolve(v); }, e => { clearTimeout(t); reject(e); });
-  });
+// ─── FETCH ONE PROXY ──────────────────────────────────────────────────────────
+// Validates magic bytes so HTML error pages (200 OK but HTML body) never
+// reach pdfjsLib. The timer is always cleared in the finally block.
+async function tryFetchProxy(proxyUrl) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    try {
+        const res = await fetch(proxyUrl, { signal: controller.signal });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const buf = await res.arrayBuffer();
+        if (!isPdfBytes(buf)) throw new Error('Response is not a valid PDF (got HTML or empty body)');
+        return buf;
+    } finally {
+        clearTimeout(timer);
+    }
 }
 
-async function fetchBytes(url, ms = 10000) {
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), ms);
-  try {
-    const res = await fetch(url, {signal: ctrl.signal});
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const buf = await res.arrayBuffer();
-    if (buf.byteLength < 100) throw new Error('empty');
-    return buf;
-  } finally { clearTimeout(t); }
-}
-
-// -- PDF LOADER ---------------------------------------------------------------
-// Tier 1: session memory  -- instant, zero network
-// Tier 2: IndexedDB       -- binary cache, no network
-// Tier 3: parallel race   -- direct + 4 proxies fire simultaneously via fetch,
-//                            validated as real PDF bytes before handing to pdfjs,
-//                            winner stored in IDB for next time
-// Tier 4: pdfjs streaming -- race the same URLs through pdfjs native loader
-//                            as absolute last resort
-
-function proxyUrls(url) {
-  const enc = encodeURIComponent(url);
-  return [
-    url,
-    `https://corsproxy.io/?url=${enc}`,
-    `https://api.allorigins.win/raw?url=${enc}`,
-    `https://api.codetabs.com/v1/proxy?quest=${enc}`,
-    `https://proxy.cors.sh/${url}`
-  ];
-}
-
-async function fetchValidPdf(proxyUrl, ms) {
-  ms = ms || 25000;
-  const ctrl = new AbortController();
-  const t = setTimeout(function() { ctrl.abort(); }, ms);
-  try {
-    const res = await fetch(proxyUrl, {signal: ctrl.signal});
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const buf = await res.arrayBuffer();
-    const h = new Uint8Array(buf, 0, 4);
-    if (h[0] !== 0x25 || h[1] !== 0x50 || h[2] !== 0x44 || h[3] !== 0x46) throw new Error('not a PDF');
-    return buf;
-  } finally { clearTimeout(t); }
-}
-
-function raceFetch(url) {
-  const urls = proxyUrls(url);
-  return new Promise(function(resolve, reject) {
-    let failures = 0;
-    urls.forEach(function(u) {
-      fetchValidPdf(u).then(resolve).catch(function() {
-        if (++failures === urls.length) reject(new Error('all fetch attempts failed'));
-      });
+// ─── RACE ALL PROXIES FOR BYTES ───────────────────────────────────────────────
+// Fires all proxies in parallel. Resolves with the first valid PDF buffer.
+// Only rejects once every proxy has failed.
+async function fetchPdfBytes(url) {
+    const proxies = getProxies(url);
+    return new Promise((resolve, reject) => {
+        let won = false;
+        const errors = [];
+        proxies.forEach(proxyUrl => {
+            tryFetchProxy(proxyUrl)
+                .then(buf => {
+                    if (!won) { won = true; resolve(buf); }
+                })
+                .catch(err => {
+                    errors.push(`${proxyUrl}: ${err.message}`);
+                    if (errors.length === proxies.length && !won) {
+                        reject(new Error(
+                            'All proxies failed. The PDF may be unreachable or CORS-blocked.\n\n' +
+                            errors.join('\n')
+                        ));
+                    }
+                });
+        });
     });
-  });
 }
 
-function racePdfJs(url) {
-  const urls = proxyUrls(url);
-  return new Promise(function(resolve, reject) {
-    let failures = 0;
-    urls.forEach(function(u) {
-      withTimeout(pdfjsLib.getDocument(Object.assign({}, PDF_OPTS, {url: u, withCredentials: false})).promise, 25000)
-        .then(resolve)
-        .catch(function() { if (++failures === urls.length) reject(new Error('all pdfjs attempts failed')); });
+// ─── PARSE BUFFER THROUGH PDFJSLIB WITH TIMEOUT ───────────────────────────────
+// A bad/partial buffer can cause pdfjsLib to hang indefinitely. This wrapper
+// enforces a hard deadline and destroys the task on timeout to free memory.
+async function parsePdfBuffer(arrayBuffer) {
+    const loadingTask = pdfjsLib.getDocument({ ...PDF_OPTIONS_BASE, data: arrayBuffer });
+    let timeoutId;
+    const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => {
+            loadingTask.destroy().catch(() => {});
+            reject(new Error('PDF parsing timed out. The file may be corrupt or too large.'));
+        }, PDFJS_PARSE_TIMEOUT_MS);
     });
-  });
+    try {
+        const doc = await Promise.race([loadingTask.promise, timeoutPromise]);
+        clearTimeout(timeoutId);
+        return doc;
+    } catch(e) {
+        clearTimeout(timeoutId);
+        throw e;
+    }
 }
 
+// ─── CORE PDF LOADER ──────────────────────────────────────────────────────────
+// Three-tier loading:
+//   1. Session cache  → instant (same-tab revisit)
+//   2. IndexedDB      → fast (~50-200ms, no network)
+//   3. Network        → validated bytes, hard-timeout parse, async IDB store
 async function loadPdfFast(url, bookId) {
-  // Tier 1: session memory
-  if (sessionDocCache.has(bookId)) { idbTouch(bookId); return sessionDocCache.get(bookId); }
-  setLoadBar(15);
-
-  // Tier 2: IndexedDB binary cache
-  if (cachedBookIds.has(String(bookId))) {
-    const cached = await idbGet(bookId);
-    if (cached && cached.data) {
-      setLoadBar(60); idbTouch(bookId);
-      try {
-        const doc = await pdfjsLib.getDocument(Object.assign({}, PDF_OPTS, {data: cached.data.slice(0)})).promise;
-        sessionDocCache.set(bookId, doc); setLoadBar(100); return doc;
-      } catch(_) { await idbDelete(bookId); cachedBookIds.delete(String(bookId)); }
+    // Tier 1: session memory
+    if (sessionDocCache.has(bookId)) {
+        idbTouch(bookId);
+        return sessionDocCache.get(bookId);
     }
-  }
 
-  setLoadBar(30);
+    setLoadBar(15);
 
-  // Tier 3: race all proxies via fetch with PDF magic byte validation
-  try {
-    const buf = await raceFetch(url);
-    setLoadBar(80);
-    const doc = await pdfjsLib.getDocument(Object.assign({}, PDF_OPTS, {data: buf.slice(0)})).promise;
-    sessionDocCache.set(bookId, doc); setLoadBar(100);
-    idbPut(bookId, buf).then(function() { cachedBookIds.add(String(bookId)); updateLibraryCacheBadge(bookId); });
+    // Tier 2: IndexedDB — skip the async lookup if we know there's nothing there
+    if (cachedBookIds.has(String(bookId))) {
+        const cached = await idbGet(bookId);
+        if (cached && cached.data && isPdfBytes(cached.data)) {
+            setLoadBar(60);
+            idbTouch(bookId);
+            try {
+                const doc = await parsePdfBuffer(cached.data);
+                sessionDocCache.set(bookId, doc);
+                setLoadBar(100);
+                return doc;
+            } catch (_) {
+                // Corrupted IDB entry — evict and fall through to network
+                await idbDelete(bookId);
+                cachedBookIds.delete(String(bookId));
+            }
+        } else if (cached) {
+            // Exists but invalid — clean up
+            await idbDelete(bookId);
+            cachedBookIds.delete(String(bookId));
+        }
+    }
+
+    // Tier 3: Network fetch
+    setLoadBar(25);
+    const arrayBuffer = await fetchPdfBytes(url);  // throws on total failure
+    setLoadBar(75);
+
+    const doc = await parsePdfBuffer(arrayBuffer);
+    sessionDocCache.set(bookId, doc);
+    setLoadBar(100);
+
+    // Store in IDB asynchronously — never block rendering
+    idbPut(bookId, arrayBuffer).then(() => {
+        cachedBookIds.add(String(bookId));
+        updateLibraryCacheBadge(bookId);
+    }).catch(() => {});
+
     return doc;
-  } catch(_) {}
-
-  setLoadBar(60);
-
-  // Tier 4: race all proxies through pdfjs native streaming
-  try {
-    const doc = await racePdfJs(url);
-    sessionDocCache.set(bookId, doc); setLoadBar(100); return doc;
-  } catch(_) {}
-
-  setLoadBar(0);
-  throw new Error('Could not load PDF. Make sure the URL points directly to a .pdf file.');
 }
 
-
-// ── CACHE BADGE UPDATE ────────────────────────────────────────────────────────
+// ─── TARGETED CACHE BADGE UPDATE ─────────────────────────────────────────────
 function updateLibraryCacheBadge(bookId) {
-  document.querySelectorAll('.library-item').forEach(item => {
-    const idx = parseInt(item.getAttribute('data-index'));
-    if (!isNaN(idx) && library[idx] && library[idx].id === bookId) {
-      const titleEl = item.querySelector('.library-item-title');
-      if (titleEl && !titleEl.querySelector('.cache-badge')) {
-        const badge = document.createElement('span');
-        badge.className = 'cache-badge'; badge.textContent = 'CACHED';
-        titleEl.appendChild(badge);
-      }
-    }
-  });
+    document.querySelectorAll('.library-item').forEach(item => {
+        const idx = parseInt(item.getAttribute('data-index'));
+        if (!isNaN(idx) && library[idx] && library[idx].id === bookId) {
+            const titleEl = item.querySelector('.library-item-title');
+            if (titleEl && !titleEl.querySelector('.cache-badge')) {
+                const badge = document.createElement('span');
+                badge.className = 'cache-badge';
+                badge.textContent = 'CACHED';
+                titleEl.appendChild(badge);
+            }
+        }
+    });
 }
 
-// ── RENDER CACHE HELPERS ──────────────────────────────────────────────────────
-// Store ImageData (raw pixel buffer) — paint by drawing onto a fresh canvas.
-// This avoids the "canvas moved out of DOM" bug where a cached canvas element
-// becomes detached once appended elsewhere.
-function evictRenderCache() {
-  while (renderCache.size >= RENDER_CACHE_MAX) {
-    renderCache.delete(renderCacheOrder.shift());
-  }
-}
-
-function clearRenderCacheForCurrentBook() {
-  for (const key of [...renderCache.keys()]) {
-    if (key.startsWith(currentPdfId + '-')) {
-      renderCache.delete(key);
-      const i = renderCacheOrder.indexOf(key);
-      if (i !== -1) renderCacheOrder.splice(i, 1);
-    }
-  }
-}
-
-// ── PAGE RENDER ───────────────────────────────────────────────────────────────
+// ─── PAGE RENDER ──────────────────────────────────────────────────────────────
 async function renderPage(pageNum) {
-  if (!pdfDoc) return;
-  if (renderInProgress) { pendingRender = pageNum; return; }
-  renderInProgress = true; pendingRender = null;
-  const viewer = document.getElementById('pdfViewer');
+    if (!pdfDoc) return;
 
-  try {
-    const cacheKey = `${currentPdfId}-${pageNum}-${scale}`;
-    let imageData = renderCache.get(cacheKey);
-    let vpWidth, vpHeight;
-
-    if (!imageData) {
-      const page = await pdfDoc.getPage(pageNum);
-      const viewport = page.getViewport({scale});
-      vpWidth = viewport.width; vpHeight = viewport.height;
-
-      // Show skeleton while rendering
-      const skeleton = document.createElement('div');
-      skeleton.className = 'loading-skeleton';
-      skeleton.style.cssText = `width:${vpWidth}px;height:${vpHeight}px`;
-      viewer.innerHTML = ''; viewer.appendChild(skeleton);
-
-      // Render into an offscreen canvas, then extract ImageData for caching
-      const offscreen = document.createElement('canvas');
-      offscreen.width = vpWidth; offscreen.height = vpHeight;
-      const ctx = offscreen.getContext('2d');
-      await page.render({canvasContext: ctx, viewport}).promise;
-      imageData = ctx.getImageData(0, 0, vpWidth, vpHeight);
-
-      evictRenderCache();
-      renderCache.set(cacheKey, {imageData, width:vpWidth, height:vpHeight});
-      renderCacheOrder.push(cacheKey);
+    if (renderInProgress) {
+        pendingRender = pageNum;
+        return;
     }
 
-    // Paint stored ImageData onto a fresh canvas — no DOM reference issues
-    const entry = renderCache.get(cacheKey);
-    const canvas = document.createElement('canvas');
-    canvas.width = entry.width; canvas.height = entry.height;
-    canvas.getContext('2d').putImageData(entry.imageData, 0, 0);
+    renderInProgress = true;
+    pendingRender = null;
 
-    viewer.innerHTML = '';
-    const wrap = document.createElement('div');
-    wrap.className = 'pdf-canvas-container';
-    wrap.appendChild(canvas);
-    viewer.appendChild(wrap);
+    const viewer = document.getElementById('pdfViewer');
 
-    currentPage = pageNum;
-    document.getElementById('pageInput').value = pageNum;
-    updateProgress();
-    schedulePreload(pageNum);
-  } catch(e) {
-    console.error('renderPage error:', e);
-    viewer.innerHTML = `<div class="empty-state"><h3>Render Error</h3><p>${e.message}</p></div>`;
-  } finally {
-    renderInProgress = false;
-    if (pendingRender !== null) { const n = pendingRender; pendingRender = null; await renderPage(n); }
-  }
+    try {
+        const cacheKey = `${currentPdfId}-${pageNum}-${scale}`;
+
+        if (!renderCache.has(cacheKey)) {
+            const page = await pdfDoc.getPage(pageNum);
+            const viewport = page.getViewport({ scale });
+
+            const skeleton = document.createElement('div');
+            skeleton.className = 'loading-skeleton';
+            skeleton.style.cssText = `width:${viewport.width}px;height:${viewport.height}px`;
+            viewer.innerHTML = '';
+            viewer.appendChild(skeleton);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+
+            evictRenderCache();
+            renderCache.set(cacheKey, canvas);
+            renderCacheOrder.push(cacheKey);
+        }
+
+        const canvas = renderCache.get(cacheKey);
+        viewer.innerHTML = '';
+        const container = document.createElement('div');
+        container.className = 'pdf-canvas-container';
+        container.appendChild(canvas);
+        viewer.appendChild(container);
+
+        currentPage = pageNum;
+        document.getElementById('pageInput').value = pageNum;
+        updateProgress();
+        schedulePreload(pageNum);
+
+    } catch (e) {
+        console.error('renderPage error:', e);
+        viewer.innerHTML =
+            `<div class="empty-state"><div class="empty-state-icon">!</div><h3>Render Error</h3><p>${e.message}</p></div>`;
+    } finally {
+        renderInProgress = false;
+        if (pendingRender !== null) {
+            const next = pendingRender;
+            pendingRender = null;
+            await renderPage(next);
+        }
+    }
 }
 
-// ── PRELOAD ───────────────────────────────────────────────────────────────────
-function schedulePreload(pageNum) {
-  if (preloadTimeout) clearTimeout(preloadTimeout);
-  preloadTimeout = setTimeout(() => {
-    const pages = [pageNum+1, pageNum+2, pageNum+3, pageNum-1].filter(p => p >= 1 && p <= totalPages);
-    const run = () => Promise.allSettled(pages.map(async p => {
-      const key = `${currentPdfId}-${p}-${scale}`;
-      if (renderCache.has(key) || !pdfDoc) return;
-      const page = await pdfDoc.getPage(p);
-      const viewport = page.getViewport({scale});
-      const canvas = document.createElement('canvas');
-      canvas.width = viewport.width; canvas.height = viewport.height;
-      const ctx = canvas.getContext('2d');
-      await page.render({canvasContext: ctx, viewport}).promise;
-      if (!renderCache.has(key)) {
-        const imageData = ctx.getImageData(0, 0, viewport.width, viewport.height);
-        evictRenderCache();
-        renderCache.set(key, {imageData, width:viewport.width, height:viewport.height});
-        renderCacheOrder.push(key);
-      }
-    }));
-    if (typeof requestIdleCallback !== 'undefined') requestIdleCallback(run, {timeout:2000});
-    else run();
-  }, 150);
+function evictRenderCache() {
+    while (renderCache.size >= RENDER_CACHE_MAX) {
+        const oldest = renderCacheOrder.shift();
+        renderCache.delete(oldest);
+    }
 }
 
-// ── LIBRARY LOADING ───────────────────────────────────────────────────────────
+// ─── PARALLEL PRELOAD ─────────────────────────────────────────────────────────
+function schedulePreload(currentPageNum) {
+    if (preloadTimeout) clearTimeout(preloadTimeout);
+    preloadTimeout = setTimeout(() => {
+        const toPreload = [currentPageNum + 1, currentPageNum + 2, currentPageNum + 3, currentPageNum - 1]
+            .filter(p => p >= 1 && p <= totalPages);
+
+        const run = async () => {
+            await Promise.allSettled(toPreload.map(async p => {
+                const key = `${currentPdfId}-${p}-${scale}`;
+                if (renderCache.has(key) || !pdfDoc) return;
+                const page = await pdfDoc.getPage(p);
+                const viewport = page.getViewport({ scale });
+                const canvas = document.createElement('canvas');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+                if (!renderCache.has(key)) {
+                    evictRenderCache();
+                    renderCache.set(key, canvas);
+                    renderCacheOrder.push(key);
+                }
+            }));
+        };
+
+        if (typeof requestIdleCallback !== 'undefined') {
+            requestIdleCallback(run, { timeout: 2000 });
+        } else {
+            run();
+        }
+    }, 150);
+}
+
+// ─── LIBRARY LOADING ──────────────────────────────────────────────────────────
 async function loadPdfFromLibrary(index) {
-  const item = library[index];
-  currentPdfId = item.id;
-  document.getElementById('pdfViewer').innerHTML =
-    '<div class="loading-skeleton" style="width:595px;height:842px"></div>';
+    const item = library[index];
+    currentPdfId = item.id;
 
-  try {
-    pdfDoc = await loadPdfFast(item.url, item.id);
-    totalPages = pdfDoc.numPages;
-    currentPage = item.currentPage || 1;
-    scale = item.scale || 1.5;
-    document.getElementById('totalPages').textContent = totalPages;
-    document.getElementById('pageInput').max = totalPages;
-    updateZoomDisplay();
-    await renderPage(currentPage);
-    loadTableOfContents().catch(()=>{});
-    renderLibrary();
-  } catch(error) {
-    document.getElementById('pdfViewer').innerHTML =
-      `<div class="empty-state"><h3>Failed to Load PDF</h3><p>${error.message}</p></div>`;
-    setLoadBar(0); console.error(error);
-  }
+    const viewer = document.getElementById('pdfViewer');
+    viewer.innerHTML = `<div class="loading-skeleton" style="width:595px;height:842px;"></div>`;
+
+    try {
+        pdfDoc = await loadPdfFast(item.url, item.id);
+
+        totalPages = pdfDoc.numPages;
+        currentPage = item.currentPage || 1;
+        scale = item.scale || 1.5;
+
+        document.getElementById('totalPages').textContent = totalPages;
+        document.getElementById('pageInput').max = totalPages;
+        updateZoomDisplay();
+
+        await renderPage(currentPage);
+        loadTableOfContents().catch(() => {});
+        renderLibrary();
+
+    } catch (error) {
+        viewer.innerHTML = `<div class="empty-state"><div class="empty-state-icon">!</div><h3>Failed to Load PDF</h3><p>${error.message}</p></div>`;
+        setLoadBar(0);
+        console.error(error);
+    }
 }
 
-// ── ADD PDF ───────────────────────────────────────────────────────────────────
+// ─── ADD PDF ──────────────────────────────────────────────────────────────────
 async function addPdf() {
-  const name = document.getElementById('pdfName').value.trim();
-  const url  = document.getElementById('pdfUrl').value.trim();
-  if (!name || !url) { alert('Please enter both name and URL'); return; }
-  const btn = event.target;
-  btn.textContent = 'Loading...'; btn.disabled = true;
-  try {
-    const tempId = Date.now();
-    const pdf = await loadPdfFast(url, tempId);
-    const pdfItem = {id:tempId, name, url, currentPage:1, totalPages:pdf.numPages, scale:1.5,
-      folders:[activeFolder||'All'], addedDate:new Date().toISOString()};
-    if (!pdfItem.folders.includes('All')) pdfItem.folders.push('All');
-    library.push(pdfItem);
-    localStorage.setItem('pdfLibrary', JSON.stringify(library));
-    renderLibrary(); closeAddModal();
-    await loadPdfFromLibrary(library.length - 1);
-  } catch(error) {
-    alert('Failed to load PDF. Error: ' + error.message); console.error(error);
-  } finally { btn.textContent = 'Add to Library'; btn.disabled = false; }
+    const name = document.getElementById('pdfName').value.trim();
+    const url = document.getElementById('pdfUrl').value.trim();
+    if (!name || !url) { alert('Please enter both name and URL'); return; }
+
+    const addButton = event.target;
+    addButton.textContent = 'Loading...';
+    addButton.disabled = true;
+
+    try {
+        const tempId = Date.now();
+        const pdf = await loadPdfFast(url, tempId);
+
+        const pdfItem = {
+            id: tempId,
+            name,
+            url,
+            currentPage: 1,
+            totalPages: pdf.numPages,
+            scale: 1.5,
+            folders: [activeFolder || 'All'],
+            addedDate: new Date().toISOString()
+        };
+        if (!pdfItem.folders.includes('All')) pdfItem.folders.push('All');
+
+        library.push(pdfItem);
+        localStorage.setItem('pdfLibrary', JSON.stringify(library));
+        renderLibrary();
+        closeAddModal();
+        await loadPdfFromLibrary(library.length - 1);
+    } catch (error) {
+        alert('Failed to load PDF.\n\n' + error.message);
+        console.error(error);
+    } finally {
+        addButton.textContent = 'Add to Library';
+        addButton.disabled = false;
+    }
 }
 
-// ── NAVIGATION ────────────────────────────────────────────────────────────────
-async function nextPage() { if (currentPage < totalPages) await renderPage(currentPage + 1); }
-async function prevPage() { if (currentPage > 1) await renderPage(currentPage - 1); }
+// ─── NAVIGATION ───────────────────────────────────────────────────────────────
+async function nextPage() {
+    if (currentPage < totalPages) await renderPage(currentPage + 1);
+}
+
+async function prevPage() {
+    if (currentPage > 1) await renderPage(currentPage - 1);
+}
+
 async function goToPage() {
-  const n = parseInt(document.getElementById('pageInput').value);
-  if (n >= 1 && n <= totalPages) await renderPage(n);
+    const pageNum = parseInt(document.getElementById('pageInput').value);
+    if (pageNum >= 1 && pageNum <= totalPages) await renderPage(pageNum);
 }
 
-// ── ZOOM ──────────────────────────────────────────────────────────────────────
+// ─── ZOOM ─────────────────────────────────────────────────────────────────────
+function clearRenderCacheForCurrentBook() {
+    for (const key of [...renderCache.keys()]) {
+        if (key.startsWith(`${currentPdfId}-`)) {
+            renderCache.delete(key);
+            const i = renderCacheOrder.indexOf(key);
+            if (i !== -1) renderCacheOrder.splice(i, 1);
+        }
+    }
+}
+
 async function zoomIn() {
-  scale += 0.25; updateZoomDisplay(); clearRenderCacheForCurrentBook();
-  if (pdfDoc) { await renderPage(currentPage); updateProgress(); }
+    scale += 0.25;
+    updateZoomDisplay();
+    clearRenderCacheForCurrentBook();
+    if (pdfDoc) { await renderPage(currentPage); updateProgress(); }
 }
+
 async function zoomOut() {
-  if (scale > 0.5) { scale -= 0.25; updateZoomDisplay(); clearRenderCacheForCurrentBook();
-    if (pdfDoc) { await renderPage(currentPage); updateProgress(); } }
+    if (scale > 0.5) {
+        scale -= 0.25;
+        updateZoomDisplay();
+        clearRenderCacheForCurrentBook();
+        if (pdfDoc) { await renderPage(currentPage); updateProgress(); }
+    }
 }
-function updateZoomDisplay() { document.getElementById('zoomLevel').textContent = Math.round((scale/1.5)*100) + '%'; }
 
-// ── PROGRESS ──────────────────────────────────────────────────────────────────
+function updateZoomDisplay() {
+    document.getElementById('zoomLevel').textContent = Math.round((scale / 1.5) * 100) + '%';
+}
+
+// ─── PROGRESS ─────────────────────────────────────────────────────────────────
 function updateProgress() {
-  if (!currentPdfId) return;
-  const index = library.findIndex(i => i.id === currentPdfId);
-  if (index === -1) return;
-  library[index].currentPage = currentPage; library[index].scale = scale;
-  localStorage.setItem('pdfLibrary', JSON.stringify(library));
-  const itemEl = document.querySelector(`.library-item[data-index="${index}"]`);
-  if (itemEl) {
-    const t = itemEl.querySelector('.library-item-progress');
-    const f = itemEl.querySelector('.progress-fill');
-    if (t) t.textContent = `Page ${currentPage} of ${totalPages}`;
-    if (f) f.style.width = `${(currentPage/totalPages*100)||0}%`;
-  }
+    if (!currentPdfId) return;
+    const index = library.findIndex(i => i.id === currentPdfId);
+    if (index === -1) return;
+
+    library[index].currentPage = currentPage;
+    library[index].scale = scale;
+    localStorage.setItem('pdfLibrary', JSON.stringify(library));
+
+    const itemEl = document.querySelector(`.library-item[data-index="${index}"]`);
+    if (itemEl) {
+        const progressText = itemEl.querySelector('.library-item-progress');
+        const progressFill = itemEl.querySelector('.progress-fill');
+        if (progressText) progressText.textContent = `Page ${currentPage} of ${totalPages}`;
+        if (progressFill) progressFill.style.width = `${(currentPage / totalPages * 100) || 0}%`;
+    }
 }
 
-// ── TABLE OF CONTENTS ─────────────────────────────────────────────────────────
+// ─── TABLE OF CONTENTS ────────────────────────────────────────────────────────
 async function loadTableOfContents() {
-  const outline = await pdfDoc.getOutline();
-  const tocList = document.getElementById('tocList');
-  if (!outline || !outline.length) {
-    tocList.innerHTML = '<div class="empty-state"><p>No table of contents available</p></div>'; return;
-  }
-  function renderOutline(items, level) {
-    return items.map(item => `
-      <div class="toc-item" style="padding-left:${level*20+10}px" onclick="goToTocPage('${item.dest}')">${item.title}</div>
-      ${item.items ? renderOutline(item.items, level+1) : ''}
-    `).join('');
-  }
-  tocList.innerHTML = renderOutline(outline, 0);
+    const outline = await pdfDoc.getOutline();
+    const tocList = document.getElementById('tocList');
+    if (!outline || !outline.length) {
+        tocList.innerHTML = '<div class="empty-state"><p>No table of contents available</p></div>';
+        return;
+    }
+    function renderOutline(items, level = 0) {
+        return items.map(item => `
+            <div class="toc-item" style="padding-left:${level * 20 + 10}px" onclick="goToTocPage('${item.dest}')">
+                ${item.title}
+            </div>
+            ${item.items ? renderOutline(item.items, level + 1) : ''}
+        `).join('');
+    }
+    tocList.innerHTML = renderOutline(outline);
 }
 
 async function goToTocPage(dest) {
-  if (!dest) return;
-  try {
-    const destArray = await pdfDoc.getDestination(dest);
-    if (destArray) { const pi = await pdfDoc.getPageIndex(destArray[0]); await renderPage(pi + 1); }
-  } catch(e) { console.error(e); }
+    if (!dest) return;
+    try {
+        const destArray = await pdfDoc.getDestination(dest);
+        if (destArray) {
+            const pageIndex = await pdfDoc.getPageIndex(destArray[0]);
+            await renderPage(pageIndex + 1);
+        }
+    } catch (e) { console.error(e); }
 }
 
-// ── FOLDERS ───────────────────────────────────────────────────────────────────
+// ─── FOLDERS ──────────────────────────────────────────────────────────────────
 function saveFolders() {
-  localStorage.setItem('pdfFolders', JSON.stringify(folders));
-  localStorage.setItem('pdfActiveFolder', activeFolder);
+    localStorage.setItem('pdfFolders', JSON.stringify(folders));
+    localStorage.setItem('pdfActiveFolder', activeFolder);
 }
 
 function renderFolderSelect() {
-  if (!folders.find(f => f.name === 'All')) folders.unshift({id:'fld_All',name:'All',color:'#e9ecef',icon:''});
-  const select = document.getElementById('folderSelect');
-  const palette = document.getElementById('folderPalette');
-  if (select) select.innerHTML = folders.map(f =>
-    `<option value="${f.name}" ${f.name===activeFolder?'selected':''}>${f.name}</option>`).join('');
-  if (palette) palette.innerHTML = folders.map(f =>
-    `<div class="folder-pill" onclick="changeFolderByPill('${f.name}')">${f.name}</div>`).join('');
+    const select = document.getElementById('folderSelect');
+    const palette = document.getElementById('folderPalette');
+    if (!folders.find(f => f.name === 'All')) {
+        folders.unshift({ id: 'fld_All', name: 'All', color: '#e9ecef', icon: '' });
+    }
+    if (select) {
+        select.innerHTML = folders.map(f =>
+            `<option value="${f.name}" ${f.name === activeFolder ? 'selected' : ''}>${f.name}</option>`
+        ).join('');
+    }
+    if (palette) {
+        palette.innerHTML = folders.map(f =>
+            `<div class="folder-pill" data-folder="${f.name}" onclick="changeFolderByPill('${f.name}')">${f.name}</div>`
+        ).join('');
+    }
 }
 
-function changeFolderByPill(name) {
-  activeFolder = name; document.getElementById('folderSelect').value = name; saveFolders(); renderLibrary();
+function changeFolderByPill(folderName) {
+    activeFolder = folderName;
+    document.getElementById('folderSelect').value = folderName;
+    saveFolders();
+    renderLibrary();
 }
-function changeFolder() { activeFolder = document.getElementById('folderSelect').value; saveFolders(); renderLibrary(); }
+
+function changeFolder() {
+    activeFolder = document.getElementById('folderSelect').value;
+    saveFolders();
+    renderLibrary();
+}
 
 function addFolder() {
-  const name = prompt('New folder name:');
-  if (!name || !name.trim() || folders.find(f => f.name === name.trim())) return;
-  folders.push({id:'fld_'+Date.now(), name:name.trim(), color:'#e9ecef', icon:''});
-  activeFolder = name.trim(); saveFolders(); renderFolderSelect(); renderLibrary();
+    const name = prompt('New folder name:');
+    if (!name || !name.trim() || folders.find(f => f.name === name.trim())) return;
+    folders.push({ id: 'fld_' + Date.now(), name: name.trim(), color: '#e9ecef', icon: '' });
+    activeFolder = name.trim();
+    saveFolders();
+    renderFolderSelect();
+    renderLibrary();
 }
 
 function renameFolder() {
-  if (activeFolder === 'All') { alert('You cannot rename the "All" folder.'); return; }
-  const folder = folders.find(f => f.name === activeFolder); if (!folder) return;
-  const newName = prompt('Rename folder:', folder.name);
-  if (!newName || !newName.trim()) return;
-  const trimmed = newName.trim(); folder.name = trimmed;
-  library.forEach(b => { const i = b.folders.indexOf(activeFolder); if (i !== -1) b.folders[i] = trimmed; });
-  activeFolder = trimmed; localStorage.setItem('pdfLibrary', JSON.stringify(library));
-  saveFolders(); renderFolderSelect(); renderLibrary();
+    if (activeFolder === 'All') { alert('You cannot rename the "All" folder.'); return; }
+    const folder = folders.find(f => f.name === activeFolder);
+    if (!folder) return;
+    const newName = prompt('Rename folder:', folder.name);
+    if (!newName || !newName.trim()) return;
+    const trimmed = newName.trim();
+    folder.name = trimmed;
+    library.forEach(b => {
+        const idx = b.folders.indexOf(activeFolder);
+        if (idx !== -1) b.folders[idx] = trimmed;
+    });
+    activeFolder = trimmed;
+    localStorage.setItem('pdfLibrary', JSON.stringify(library));
+    saveFolders();
+    renderFolderSelect();
+    renderLibrary();
 }
 
 function deleteFolder() {
-  if (activeFolder === 'All') { alert('You cannot delete the "All" folder.'); return; }
-  if (!confirm(`Delete folder "${activeFolder}"? Books will remain in All.`)) return;
-  folders = folders.filter(f => f.name !== activeFolder);
-  library.forEach(b => { b.folders = b.folders.filter(fn => fn !== activeFolder); if (!b.folders.length) b.folders = ['All']; });
-  activeFolder = 'All'; localStorage.setItem('pdfLibrary', JSON.stringify(library));
-  saveFolders(); renderFolderSelect(); renderLibrary();
+    if (activeFolder === 'All') { alert('You cannot delete the "All" folder.'); return; }
+    if (!confirm(`Delete folder "${activeFolder}"? Books will remain in All.`)) return;
+    folders = folders.filter(f => f.name !== activeFolder);
+    library.forEach(b => {
+        b.folders = b.folders.filter(fn => fn !== activeFolder);
+        if (!b.folders.length) b.folders = ['All'];
+    });
+    activeFolder = 'All';
+    localStorage.setItem('pdfLibrary', JSON.stringify(library));
+    saveFolders();
+    renderFolderSelect();
+    renderLibrary();
 }
 
-// ── LIBRARY RENDER ────────────────────────────────────────────────────────────
-function toggleBookMenu(e, index) {
-  e.stopPropagation(); closeAllBookMenus();
-  document.querySelector(`.library-item[data-index="${index}"] .book-menu-dropdown`)?.classList.toggle('open');
+// ─── LIBRARY RENDER & DRAG ───────────────────────────────────────────────────
+function toggleBookMenu(event, index) {
+    event.stopPropagation();
+    closeAllBookMenus();
+    const item = document.querySelector(`.library-item[data-index="${index}"]`);
+    if (item) item.querySelector('.book-menu-dropdown')?.classList.toggle('open');
 }
+
 function closeAllBookMenus() {
-  document.querySelectorAll('.book-menu-dropdown.open').forEach(m => m.classList.remove('open'));
+    document.querySelectorAll('.book-menu-dropdown.open').forEach(m => m.classList.remove('open'));
 }
 
 function renderLibrary() {
-  const list = document.getElementById('libraryList');
-  const visible = activeFolder === 'All' ? library : library.filter(i => Array.isArray(i.folders) && i.folders.includes(activeFolder));
-  if (!visible.length) {
-    list.innerHTML = '<div class="empty-state"><p>No books in this folder</p></div>';
-    renderFolderSelect(); return;
-  }
-  list.innerHTML = visible.map(item => {
-    const realIndex = library.findIndex(b => b.id === item.id);
-    const isCached = cachedBookIds.has(String(item.id));
-    const canRemove = activeFolder !== 'All' && Array.isArray(item.folders) && item.folders.includes(activeFolder);
-    return `<div class="library-item ${currentPdfId===item.id?'active':''}" data-index="${realIndex}">
-      <div class="library-item-main" onclick="loadPdfFromLibrary(${realIndex})">
-        <div class="library-item-title">${item.name}${isCached?'<span class="cache-badge">CACHED</span>':''}</div>
-        <div class="library-item-progress">Page ${item.currentPage||1} of ${item.totalPages||1}</div>
-        <div class="progress-bar"><div class="progress-fill" style="width:${(item.currentPage/item.totalPages*100||0)}%"></div></div>
-      </div>
-      <div class="library-item-right">
-        <button class="book-menu-btn" onclick="toggleBookMenu(event,${realIndex})">...</button>
-        <button class="delete-btn" onclick="event.stopPropagation();deletePdf(${realIndex})">Delete</button>
-        <div class="book-menu-dropdown">
-          <div class="book-menu-item" onclick="addBookToFolder(${realIndex})">Add to folder</div>
-          <div class="book-menu-item ${canRemove?'':'disabled'}" onclick="${canRemove?`removeBookFromCurrentFolder(${realIndex})`:'event.stopPropagation();'}">Remove from this folder</div>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-  renderFolderSelect();
-  attachLibraryDragHandlers();
+    const list = document.getElementById('libraryList');
+    const visibleItems = activeFolder === 'All'
+        ? library
+        : library.filter(item => Array.isArray(item.folders) && item.folders.includes(activeFolder));
+
+    if (!visibleItems.length) {
+        list.innerHTML = '<div class="empty-state"><div class="empty-state-icon"></div><p>No books in this folder</p></div>';
+        renderFolderSelect();
+        return;
+    }
+
+    list.innerHTML = visibleItems.map(item => {
+        const realIndex = library.findIndex(b => b.id === item.id);
+        const isCached = cachedBookIds.has(String(item.id));
+        const canRemove = activeFolder !== 'All' && Array.isArray(item.folders) && item.folders.includes(activeFolder);
+        return `
+            <div class="library-item ${currentPdfId === item.id ? 'active' : ''}" data-index="${realIndex}">
+                <div class="library-item-main" onclick="loadPdfFromLibrary(${realIndex})">
+                    <div class="library-item-title">
+                        ${item.name}
+                        ${isCached ? '<span class="cache-badge">CACHED</span>' : ''}
+                    </div>
+                    <div class="library-item-progress">Page ${item.currentPage || 1} of ${item.totalPages || 1}</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width:${(item.currentPage / item.totalPages * 100 || 0)}%"></div>
+                    </div>
+                </div>
+                <div class="library-item-right">
+                    <button class="book-menu-btn" onclick="toggleBookMenu(event, ${realIndex})">...</button>
+                    <button class="delete-btn" onclick="event.stopPropagation(); deletePdf(${realIndex})">Delete</button>
+                    <div class="book-menu-dropdown">
+                        <div class="book-menu-item" onclick="addBookToFolder(${realIndex})">Add to folder</div>
+                        <div class="book-menu-item ${canRemove ? '' : 'disabled'}"
+                             onclick="${canRemove ? `removeBookFromCurrentFolder(${realIndex})` : 'event.stopPropagation();'}">
+                            Remove from this folder
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    renderFolderSelect();
+    attachLibraryDragHandlers();
 }
 
 function attachLibraryDragHandlers() {
-  document.querySelectorAll('.library-item').forEach(item => {
-    item.onmousedown = function(e) {
-      if (e.button !== 0 || e.target.classList.contains('book-menu-btn') ||
-          e.target.classList.contains('delete-btn') || e.target.closest('.book-menu-dropdown')) return;
-      isDraggingLibraryItem = true;
-      dragStartIndex = parseInt(this.getAttribute('data-index'));
-      dragCurrentIndex = dragStartIndex;
-      this.classList.add('dragging');
-      const cur = this;
-      function onMove(ev) {
-        if (!isDraggingLibraryItem) return;
-        const el = document.elementFromPoint(ev.clientX, ev.clientY);
-        const t = el && el.closest('.library-item');
-        document.querySelectorAll('.library-item.drag-over').forEach(i => i.classList.remove('drag-over'));
-        if (t && t !== cur) { t.classList.add('drag-over'); dragCurrentIndex = parseInt(t.getAttribute('data-index')); }
-        else { dragCurrentIndex = dragStartIndex; }
-      }
-      function onUp() {
-        document.removeEventListener('mousemove', onMove);
-        document.removeEventListener('mouseup', onUp);
-        if (!isDraggingLibraryItem) return;
-        isDraggingLibraryItem = false; cur.classList.remove('dragging');
-        document.querySelectorAll('.library-item.drag-over').forEach(i => i.classList.remove('drag-over'));
-        if (dragCurrentIndex !== null && dragStartIndex !== null && dragCurrentIndex !== dragStartIndex) {
-          const tmp = library[dragStartIndex];
-          library[dragStartIndex] = library[dragCurrentIndex];
-          library[dragCurrentIndex] = tmp;
-          localStorage.setItem('pdfLibrary', JSON.stringify(library));
-          renderLibrary();
-        }
-        dragStartIndex = null; dragCurrentIndex = null;
-      }
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup', onUp);
-    };
-  });
+    document.querySelectorAll('.library-item').forEach(item => {
+        item.onmousedown = function(e) {
+            if (e.button !== 0 ||
+                e.target.classList.contains('book-menu-btn') ||
+                e.target.classList.contains('delete-btn') ||
+                e.target.closest('.book-menu-dropdown')) return;
+
+            isDraggingLibraryItem = true;
+            dragStartIndex = parseInt(this.getAttribute('data-index'));
+            dragCurrentIndex = dragStartIndex;
+            this.classList.add('dragging');
+            const currentItem = this;
+
+            function onMouseMove(ev) {
+                if (!isDraggingLibraryItem) return;
+                const el = document.elementFromPoint(ev.clientX, ev.clientY);
+                if (!el) return;
+                const targetItem = el.closest('.library-item');
+                document.querySelectorAll('.library-item.drag-over').forEach(i => i.classList.remove('drag-over'));
+                if (targetItem && targetItem !== currentItem) {
+                    targetItem.classList.add('drag-over');
+                    dragCurrentIndex = parseInt(targetItem.getAttribute('data-index'));
+                } else {
+                    dragCurrentIndex = dragStartIndex;
+                }
+            }
+
+            function onMouseUp() {
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                if (!isDraggingLibraryItem) return;
+                isDraggingLibraryItem = false;
+                currentItem.classList.remove('dragging');
+                document.querySelectorAll('.library-item.drag-over').forEach(i => i.classList.remove('drag-over'));
+                if (dragCurrentIndex !== null && dragStartIndex !== null && dragCurrentIndex !== dragStartIndex) {
+                    const temp = library[dragStartIndex];
+                    library[dragStartIndex] = library[dragCurrentIndex];
+                    library[dragCurrentIndex] = temp;
+                    localStorage.setItem('pdfLibrary', JSON.stringify(library));
+                    renderLibrary();
+                }
+                dragStartIndex = null;
+                dragCurrentIndex = null;
+            }
+
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+        };
+    });
 }
 
 function deletePdf(index) {
-  if (!confirm('Are you sure you want to delete this PDF from your library?')) return;
-  const id = library[index]?.id;
-  if (id) {
-    sessionDocCache.delete(id); idbDelete(id); cachedBookIds.delete(String(id));
-    for (const key of [...renderCache.keys()]) {
-      if (key.startsWith(id + '-')) { renderCache.delete(key); const i = renderCacheOrder.indexOf(key); if (i !== -1) renderCacheOrder.splice(i,1); }
+    if (confirm('Are you sure you want to delete this PDF from your library?')) {
+        const id = library[index]?.id;
+        if (id) {
+            sessionDocCache.delete(id);
+            idbDelete(id);
+            cachedBookIds.delete(String(id));
+            for (const key of [...renderCache.keys()]) {
+                if (key.startsWith(`${id}-`)) {
+                    renderCache.delete(key);
+                    const i = renderCacheOrder.indexOf(key);
+                    if (i !== -1) renderCacheOrder.splice(i, 1);
+                }
+            }
+        }
+        library.splice(index, 1);
+        localStorage.setItem('pdfLibrary', JSON.stringify(library));
+        renderLibrary();
+        if (!library.length) {
+            document.getElementById('pdfViewer').innerHTML = `
+                <div class="empty-state"><div class="empty-state-icon"></div><h3>No PDF Loaded</h3><p>Click "Add PDF" to load a document from URL</p></div>
+            `;
+        }
     }
-  }
-  library.splice(index, 1);
-  localStorage.setItem('pdfLibrary', JSON.stringify(library));
-  renderLibrary();
-  if (!library.length) document.getElementById('pdfViewer').innerHTML =
-    '<div class="empty-state"><h3>No PDF Loaded</h3><p>Click "Add PDF" to load a document from URL</p></div>';
 }
 
 function addBookToFolder(index) {
-  const book = library[index]; if (!book) return;
-  const input = prompt(`Add "${book.name}" to which folder?\n\nExisting folders:\n- ` + folders.map(f=>f.name).join('\n- '));
-  if (!input || !input.trim()) { closeAllBookMenus(); return; }
-  const trimmed = input.trim();
-  if (!folders.find(f => f.name === trimmed)) { folders.push({id:'fld_'+Date.now(),name:trimmed,color:'#e9ecef',icon:''}); saveFolders(); renderFolderSelect(); }
-  if (!Array.isArray(book.folders)) book.folders = ['All'];
-  if (!book.folders.includes(trimmed)) book.folders.push(trimmed);
-  if (!book.folders.includes('All')) book.folders.push('All');
-  localStorage.setItem('pdfLibrary', JSON.stringify(library));
-  renderLibrary(); closeAllBookMenus();
-  alert(`"${book.name}" added to folder "${trimmed}".`);
+    const book = library[index];
+    if (!book) return;
+    const input = prompt(`Add "${book.name}" to which folder?\n\nExisting folders:\n- ` + folders.map(f => f.name).join('\n- '));
+    if (!input || !input.trim()) { closeAllBookMenus(); return; }
+    const trimmed = input.trim();
+    let folder = folders.find(f => f.name === trimmed);
+    if (!folder) {
+        folder = { id: 'fld_' + Date.now(), name: trimmed, color: '#e9ecef', icon: '' };
+        folders.push(folder);
+        saveFolders();
+        renderFolderSelect();
+    }
+    if (!Array.isArray(book.folders)) book.folders = ['All'];
+    if (!book.folders.includes(trimmed)) book.folders.push(trimmed);
+    if (!book.folders.includes('All')) book.folders.push('All');
+    localStorage.setItem('pdfLibrary', JSON.stringify(library));
+    renderLibrary();
+    closeAllBookMenus();
+    alert(`"${book.name}" added to folder "${trimmed}".`);
 }
 
 function removeBookFromCurrentFolder(index) {
-  if (activeFolder === 'All') { closeAllBookMenus(); return; }
-  const book = library[index];
-  if (!book || !book.folders?.includes(activeFolder)) { closeAllBookMenus(); return; }
-  book.folders = book.folders.filter(fn => fn !== activeFolder);
-  if (!book.folders.length) book.folders = ['All'];
-  localStorage.setItem('pdfLibrary', JSON.stringify(library));
-  renderLibrary(); closeAllBookMenus();
-  alert(`"${book.name}" removed from folder "${activeFolder}".`);
+    if (activeFolder === 'All') { closeAllBookMenus(); return; }
+    const book = library[index];
+    if (!book || !book.folders?.includes(activeFolder)) { closeAllBookMenus(); return; }
+    book.folders = book.folders.filter(fn => fn !== activeFolder);
+    if (!book.folders.length) book.folders = ['All'];
+    localStorage.setItem('pdfLibrary', JSON.stringify(library));
+    renderLibrary();
+    closeAllBookMenus();
+    alert(`"${book.name}" removed from folder "${activeFolder}".`);
 }
 
-document.addEventListener('click', e => { if (!e.target.closest('.library-item-right')) closeAllBookMenus(); });
+document.addEventListener('click', e => {
+    if (!e.target.closest('.library-item-right')) closeAllBookMenus();
+});
 
-// ── MODALS ────────────────────────────────────────────────────────────────────
+// ─── MODALS ───────────────────────────────────────────────────────────────────
 function openAddModal() {
-  document.getElementById('addModal').classList.add('active');
-  document.getElementById('pdfName').value = '';
-  document.getElementById('pdfUrl').value = '';
+    document.getElementById('addModal').classList.add('active');
+    document.getElementById('pdfName').value = '';
+    document.getElementById('pdfUrl').value = '';
 }
-function closeAddModal() { document.getElementById('addModal').classList.remove('active'); }
+function closeAddModal() {
+    document.getElementById('addModal').classList.remove('active');
+}
 
-// ── UI ────────────────────────────────────────────────────────────────────────
+// ─── UI ───────────────────────────────────────────────────────────────────────
 function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
-  if (tab === 'library') { document.querySelectorAll('.tab')[0].classList.add('active'); document.getElementById('libraryTab').style.display = 'block'; }
-  else { document.querySelectorAll('.tab')[1].classList.add('active'); document.getElementById('tocTab').style.display = 'block'; }
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+    if (tab === 'library') {
+        document.querySelectorAll('.tab')[0].classList.add('active');
+        document.getElementById('libraryTab').style.display = 'block';
+    } else {
+        document.querySelectorAll('.tab')[1].classList.add('active');
+        document.getElementById('tocTab').style.display = 'block';
+    }
 }
+
 function toggleSidebar() {
-  const s = document.getElementById('sidebar');
-  s.style.display = s.style.display === 'none' ? 'flex' : 'none';
+    const sidebar = document.getElementById('sidebar');
+    sidebar.style.display = sidebar.style.display === 'none' ? 'flex' : 'none';
 }
+
 function toggleFullscreen() {
-  const c = document.querySelector('.container');
-  const btn = document.getElementById('fullscreenBtn');
-  if (!document.fullscreenElement) c.requestFullscreen().then(() => btn.textContent = 'Exit Fullscreen').catch(e => alert(e.message));
-  else document.exitFullscreen().then(() => btn.textContent = 'Fullscreen');
+    const container = document.querySelector('.container');
+    const btn = document.getElementById('fullscreenBtn');
+    if (!document.fullscreenElement) {
+        container.requestFullscreen().then(() => { btn.textContent = 'Exit Fullscreen'; }).catch(err => alert(err.message));
+    } else {
+        document.exitFullscreen().then(() => { btn.textContent = 'Fullscreen'; });
+    }
 }
+
 document.addEventListener('fullscreenchange', () => {
-  if (!document.fullscreenElement) document.getElementById('fullscreenBtn').textContent = 'Fullscreen';
-});
-document.addEventListener('keydown', e => {
-  if (e.target.tagName === 'INPUT') return;
-  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextPage();
-  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prevPage();
+    if (!document.fullscreenElement) document.getElementById('fullscreenBtn').textContent = 'Fullscreen';
 });
 
-// ── DICTIONARY ────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextPage();
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prevPage();
+});
+
+// ─── DICTIONARY ───────────────────────────────────────────────────────────────
 let dictPanelOpen = false;
 let dictHistory = JSON.parse(localStorage.getItem('dictHistory') || '[]');
 let dictAudioUrls = {};
 
 function toggleDictPanel() {
-  dictPanelOpen = !dictPanelOpen;
-  document.getElementById('dictPanel').classList.toggle('open', dictPanelOpen);
-  document.getElementById('dictToggleBtn').classList.toggle('dict-active', dictPanelOpen);
-  if (dictPanelOpen) setTimeout(() => document.getElementById('dictInput').focus(), 320);
+    dictPanelOpen = !dictPanelOpen;
+    const panel = document.getElementById('dictPanel');
+    const btn   = document.getElementById('dictToggleBtn');
+    panel.classList.toggle('open', dictPanelOpen);
+    btn.classList.toggle('dict-active', dictPanelOpen);
+    if (dictPanelOpen) {
+        setTimeout(() => document.getElementById('dictInput').focus(), 320);
+    }
 }
 
 async function lookupWord() {
-  const raw = document.getElementById('dictInput').value.trim(); if (!raw) return;
-  const word = raw.toLowerCase().replace(/[^a-z\-']/g,''); if (!word) return;
-  const body = document.getElementById('dictBody');
-  body.innerHTML = `<div class="dict-loading"><div class="dict-spinner"></div><br>Looking up <strong>${escH(raw)}</strong>...</div>`;
-  try {
-    const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
-    if (!res.ok) throw new Error('not_found');
-    const data = await res.json();
-    if (!Array.isArray(data) || !data.length) throw new Error('not_found');
-    renderDictResult(data, word); addToHistory(word);
-  } catch(e) {
-    body.innerHTML = e.message === 'not_found'
-      ? `<div class="dict-error">No results found for <strong>${escH(raw)}</strong>.<br><br>Check the spelling, or try the base form of the word.</div>${renderHistoryHTML()}`
-      : `<div class="dict-error">Network error. Check your connection and try again.</div>${renderHistoryHTML()}`;
-  }
+    const raw  = document.getElementById('dictInput').value.trim();
+    if (!raw) return;
+    const word = raw.toLowerCase().replace(/[^a-z\-']/g, '');
+    if (!word) return;
+
+    const body = document.getElementById('dictBody');
+    body.innerHTML = `<div class="dict-loading"><div class="dict-spinner"></div><br>Looking up <strong>${escH(raw)}</strong>...</div>`;
+
+    try {
+        const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+        if (!res.ok) throw new Error('not_found');
+        const data = await res.json();
+        if (!Array.isArray(data) || !data.length) throw new Error('not_found');
+        renderDictResult(data, word);
+        addToHistory(word);
+    } catch (e) {
+        if (e.message === 'not_found') {
+            body.innerHTML = `
+                <div class="dict-error">
+                    No results found for <strong>${escH(raw)}</strong>.<br><br>
+                    Check the spelling, or try the base form of the word (e.g. "run" instead of "running").
+                </div>
+                ${renderHistoryHTML()}`;
+        } else {
+            body.innerHTML = `<div class="dict-error">Network error. Check your connection and try again.</div>${renderHistoryHTML()}`;
+        }
+    }
 }
 
 function renderDictResult(entries, word) {
-  const body = document.getElementById('dictBody');
-  dictAudioUrls = {};
-  let html = renderHistoryHTML();
-  html += `<div class="dict-word-heading">${escH(entries[0].word||word)}</div>`;
-  const phonetics = entries.flatMap(e => e.phonetics||[]).filter(p => p.text);
-  const uniquePh = [...new Map(phonetics.map(p=>[p.text,p])).values()];
-  if (uniquePh.length) {
-    const ph = uniquePh[0];
-    html += `<div class="dict-phonetic">${escH(ph.text)}`;
-    const audioSrc = entries.flatMap(e => e.phonetics||[]).find(p=>p.audio)?.audio;
-    if (audioSrc) { const aid='aud_'+word; dictAudioUrls[aid]=audioSrc; html+=`<button class="dict-audio-btn" onclick="playDictAudio('${aid}')">Play</button>`; }
-    html += `</div>`;
-  }
-  const allMeanings = entries.flatMap(e => e.meanings||[]);
-  const byPos = {};
-  allMeanings.forEach(m => { const pos=m.partOfSpeech||'other'; if(!byPos[pos]) byPos[pos]=[]; byPos[pos].push(...(m.definitions||[])); });
-  const posOrder = ['noun','verb','adjective','adverb','pronoun','preposition','conjunction','interjection','other'];
-  [...new Set([...posOrder.filter(p=>byPos[p]),...Object.keys(byPos)])].forEach(pos => {
-    const defs = byPos[pos]; if (!defs||!defs.length) return;
-    html += `<div class="dict-section"><div class="dict-pos-badge">${escH(pos)}</div>`;
-    defs.slice(0,6).forEach((def,i) => {
-      html += `<div class="dict-definition"><strong>${i+1}.</strong> ${escH(def.definition)}</div>`;
-      if (def.example) html += `<div class="dict-example">"${escH(def.example)}"</div>`;
+    const body = document.getElementById('dictBody');
+    dictAudioUrls = {};
+
+    let html = renderHistoryHTML();
+
+    html += `<div class="dict-word-heading">${escH(entries[0].word || word)}</div>`;
+
+    const phonetics = entries.flatMap(e => e.phonetics || []).filter(p => p.text);
+    const uniquePhonetics = [...new Map(phonetics.map(p => [p.text, p])).values()];
+    if (uniquePhonetics.length) {
+        const ph = uniquePhonetics[0];
+        html += `<div class="dict-phonetic">${escH(ph.text)}`;
+        const audioSrc = entries.flatMap(e => e.phonetics || []).find(p => p.audio)?.audio;
+        if (audioSrc) {
+            const audioId = 'aud_' + word;
+            dictAudioUrls[audioId] = audioSrc;
+            html += `<button class="dict-audio-btn" onclick="playDictAudio('${audioId}')">Play</button>`;
+        }
+        html += `</div>`;
+    }
+
+    const allMeanings = entries.flatMap(e => e.meanings || []);
+    const meaningsByPos = {};
+    allMeanings.forEach(m => {
+        const pos = m.partOfSpeech || 'other';
+        if (!meaningsByPos[pos]) meaningsByPos[pos] = [];
+        meaningsByPos[pos].push(...(m.definitions || []));
     });
-    if (defs.length > 6) html += `<div style="font-size:12px;color:#999;padding-left:12px;margin-bottom:4px">+${defs.length-6} more definitions</div>`;
-    html += `</div>`;
-  });
-  const allSyns = [...new Set(allMeanings.flatMap(m=>[...(m.synonyms||[]),...(m.definitions||[]).flatMap(d=>d.synonyms||[])]))].slice(0,18);
-  if (allSyns.length) {
-    html += `<div class="dict-divider"></div><div class="dict-section"><div class="dict-meta-label">Synonyms</div><div class="dict-synonyms">`;
-    html += allSyns.map(s=>`<span class="dict-syn-pill" onclick="quickLookup('${escH(s)}')">${escH(s)}</span>`).join('');
-    html += `</div></div>`;
-  }
-  const allAnts = [...new Set(allMeanings.flatMap(m=>[...(m.antonyms||[]),...(m.definitions||[]).flatMap(d=>d.antonyms||[])]))].slice(0,10);
-  if (allAnts.length) {
-    html += `<div class="dict-divider"></div><div class="dict-section"><div class="dict-meta-label">Antonyms</div><div class="dict-synonyms">`;
-    html += allAnts.map(s=>`<span class="dict-syn-pill" style="background:#fff1f1;color:#c0392b;border-color:#f9c0c0" onclick="quickLookup('${escH(s)}')">${escH(s)}</span>`).join('');
-    html += `</div></div>`;
-  }
-  const origins = entries.map(e=>e.origin).filter(Boolean);
-  if (origins.length) html += `<div class="dict-divider"></div><div class="dict-section"><div class="dict-meta-label">Etymology / Origin</div><div class="dict-origin">${escH(origins[0])}</div></div>`;
-  const srcs = [...new Set(entries.flatMap(e=>e.sourceUrls||[]))];
-  if (srcs.length) html += `<div class="dict-source">Source: <a href="${srcs[0]}" target="_blank">${srcs[0]}</a></div>`;
-  body.innerHTML = html;
+
+    const posOrder = ['noun','verb','adjective','adverb','pronoun','preposition','conjunction','interjection','other'];
+    const sortedPos = [...new Set([...posOrder.filter(p => meaningsByPos[p]), ...Object.keys(meaningsByPos)])];
+
+    sortedPos.forEach(pos => {
+        const defs = meaningsByPos[pos];
+        if (!defs || !defs.length) return;
+        html += `<div class="dict-section">`;
+        html += `<div class="dict-pos-badge">${escH(pos)}</div>`;
+        defs.slice(0, 6).forEach((def, i) => {
+            html += `<div class="dict-definition"><strong>${i + 1}.</strong> ${escH(def.definition)}</div>`;
+            if (def.example) html += `<div class="dict-example">"${escH(def.example)}"</div>`;
+        });
+        if (defs.length > 6) {
+            html += `<div style="font-size:12px;color:#999;padding-left:12px;margin-bottom:4px;">+${defs.length - 6} more definitions</div>`;
+        }
+        html += `</div>`;
+    });
+
+    const allSynonyms = [...new Set(
+        allMeanings.flatMap(m => [
+            ...(m.synonyms || []),
+            ...(m.definitions || []).flatMap(d => d.synonyms || [])
+        ])
+    )].slice(0, 18);
+
+    if (allSynonyms.length) {
+        html += `<div class="dict-divider"></div><div class="dict-section">`;
+        html += `<div class="dict-meta-label">Synonyms</div>`;
+        html += `<div class="dict-synonyms">${allSynonyms.map(s =>
+            `<span class="dict-syn-pill" onclick="quickLookup('${escH(s)}')">${escH(s)}</span>`
+        ).join('')}</div>`;
+        html += `</div>`;
+    }
+
+    const allAntonyms = [...new Set(
+        allMeanings.flatMap(m => [
+            ...(m.antonyms || []),
+            ...(m.definitions || []).flatMap(d => d.antonyms || [])
+        ])
+    )].slice(0, 10);
+
+    if (allAntonyms.length) {
+        html += `<div class="dict-divider"></div><div class="dict-section">`;
+        html += `<div class="dict-meta-label">Antonyms</div>`;
+        html += `<div class="dict-synonyms">${allAntonyms.map(s =>
+            `<span class="dict-syn-pill" style="background:#fff1f1;color:#c0392b;border-color:#f9c0c0;" onclick="quickLookup('${escH(s)}')">${escH(s)}</span>`
+        ).join('')}</div>`;
+        html += `</div>`;
+    }
+
+    const origins = entries.map(e => e.origin).filter(Boolean);
+    if (origins.length) {
+        html += `<div class="dict-divider"></div><div class="dict-section">`;
+        html += `<div class="dict-meta-label">Etymology / Origin</div>`;
+        html += `<div class="dict-origin">${escH(origins[0])}</div>`;
+        html += `</div>`;
+    }
+
+    const sourceUrls = [...new Set(entries.flatMap(e => e.sourceUrls || []))];
+    if (sourceUrls.length) {
+        html += `<div class="dict-source">Source: <a href="${sourceUrls[0]}" target="_blank">${sourceUrls[0]}</a></div>`;
+    }
+
+    body.innerHTML = html;
 }
 
-function playDictAudio(audioId) { const url=dictAudioUrls[audioId]; if(url) new Audio(url).play().catch(()=>{}); }
-function quickLookup(word) { document.getElementById('dictInput').value=word; lookupWord(); }
-function addToHistory(word) { dictHistory=[word,...dictHistory.filter(w=>w!==word)].slice(0,12); localStorage.setItem('dictHistory',JSON.stringify(dictHistory)); }
+function playDictAudio(audioId) {
+    const url = dictAudioUrls[audioId];
+    if (!url) return;
+    new Audio(url).play().catch(() => {});
+}
+
+function quickLookup(word) {
+    document.getElementById('dictInput').value = word;
+    lookupWord();
+}
+
+function addToHistory(word) {
+    dictHistory = [word, ...dictHistory.filter(w => w !== word)].slice(0, 12);
+    localStorage.setItem('dictHistory', JSON.stringify(dictHistory));
+}
+
 function renderHistoryHTML() {
-  if (!dictHistory.length) return '';
-  return `<div class="dict-history">${dictHistory.map(w=>`<span class="dict-hist-pill" onclick="quickLookup('${escH(w)}')">${escH(w)}</span>`).join('')}</div>`;
-}
-function escH(str) {
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    if (!dictHistory.length) return '';
+    return `<div class="dict-history">${
+        dictHistory.map(w => `<span class="dict-hist-pill" onclick="quickLookup('${escH(w)}')">${escH(w)}</span>`).join('')
+    }</div>`;
 }
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
+function escH(str) {
+    return String(str)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;')
+        .replace(/'/g,'&#39;');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
 renderFolderSelect();
 renderLibrary();
 updateZoomDisplay();
