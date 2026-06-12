@@ -1,1708 +1,1655 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta name="google-site-verification" content="E7knuFVZA_dGkubXqO4pMzNhFaQk7aSImN985b-rjGs" />
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Continua | PDF Reader Pro</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Continua | PDF Reader PRO</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
+:root {
+  --ink: #1a1a2e;
+  --ink-mid: #2d2d44;
+  --ink-light: #3d3d58;
+  --accent: #c9a84c;
+  --accent-dim: #a8893e;
+  --page: #f5f2eb;
+  --page-dim: #ede9e0;
+  --sidebar-bg: #f0ece3;
+  --border: #d8d2c4;
+  --text: #2a2a3d;
+  --text-mid: #5a5a72;
+  --text-faint: #8a8a9a;
+  --viewer-bg: #3a3a3a;
+  --toolbar-bg: #1e1e2e;
+  --success: #3a7d44;
+  --danger: #8b2635;
+  --white: #ffffff;
+  --shadow: 0 2px 12px rgba(26,26,46,0.12);
+  --shadow-lg: 0 8px 32px rgba(26,26,46,0.2);
+}
 
-        .container {
-            max-width: 1600px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            height: calc(100vh - 40px);
-        }
+html, body { height: 100%; overflow: hidden; }
 
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+body {
+  font-family: 'Georgia', 'Times New Roman', serif;
+  background: var(--ink);
+  color: var(--text);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
 
-        .header h1 { font-size: 28px; font-weight: 600; }
-        .header-buttons { display: flex; gap: 10px; }
+/* ── APP SHELL ── */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
 
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.3s;
-        }
+/* ── HEADER ── */
+.header {
+  background: var(--ink);
+  border-bottom: 1px solid rgba(201,168,76,0.3);
+  padding: 0 20px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  z-index: 10;
+}
 
-        .btn-primary { background: white; color: #667eea; }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
-        .btn-secondary { background: rgba(255,255,255,0.2); color: white; border: 1px solid white; }
-        .btn-secondary:hover { background: rgba(255,255,255,0.3); }
-        .btn-dict { background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.4); }
-        .btn-dict:hover { background: rgba(255,255,255,0.25); }
-        .btn-dict.dict-active { background: white; color: #764ba2; }
+.header-brand {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
 
-        .main-content { display: flex; flex: 1; overflow: hidden; }
+.header-brand-name {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--white);
+  letter-spacing: 0.02em;
+}
 
-        .sidebar {
-            width: 300px;
-            background: #f8f9fa;
-            border-right: 1px solid #e0e0e0;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
+.header-brand-sub {
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 600;
+}
 
-        .sidebar-tabs { display: flex; background: #e9ecef; border-bottom: 1px solid #dee2e6; }
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
-        .tab {
-            flex: 1;
-            padding: 15px;
-            text-align: center;
-            cursor: pointer;
-            font-weight: 500;
-            color: #6c757d;
-            transition: all 0.3s;
-            border-bottom: 3px solid transparent;
-        }
+.hbtn {
+  padding: 6px 14px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  transition: all 0.15s;
+  text-transform: uppercase;
+}
 
-        .tab.active { color: #667eea; background: white; border-bottom-color: #667eea; }
+.hbtn-primary {
+  background: var(--accent);
+  color: var(--ink);
+}
+.hbtn-primary:hover { background: #d4b060; }
 
-        .tab-content { flex: 1; overflow-y: auto; padding: 20px; }
+.hbtn-ghost {
+  background: transparent;
+  color: rgba(255,255,255,0.7);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+.hbtn-ghost:hover { background: rgba(255,255,255,0.08); color: white; }
 
-        .folder-bar {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 6px;
-            margin-bottom: 8px;
-        }
+.hbtn-dict {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid rgba(201,168,76,0.4);
+}
+.hbtn-dict:hover { background: rgba(201,168,76,0.1); }
+.hbtn-dict.active { background: var(--accent); color: var(--ink); }
 
-        .folder-select {
-            flex: 1 1 120px;
-            min-width: 120px;
-            padding: 6px 8px;
-            border-radius: 8px;
-            border: 1px solid #ced4da;
-            font-size: 12px;
-            background: #ffffff;
-        }
+/* ── BODY ── */
+.body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
 
-        .folder-pill {
-            flex: 0 0 auto;
-            padding: 4px 8px;
-            border-radius: 999px;
-            background: #e9ecef;
-            font-size: 11px;
-            cursor: pointer;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 280px;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: width 0.2s ease, opacity 0.2s ease;
+}
 
-        .folder-pill:hover { background: #dee2e6; }
+.sidebar.collapsed {
+  width: 0;
+  opacity: 0;
+  pointer-events: none;
+}
 
-        #folderPalette { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+.sidebar-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: var(--page-dim);
+  flex-shrink: 0;
+}
 
-        .library-item {
-            background: white;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s;
-            border: 2px solid #e0e0e0;
-            user-select: none;
-            position: relative;
-            display: flex;
-            gap: 12px;
-            align-items: flex-start;
-        }
+.stab {
+  flex: 1;
+  padding: 11px 0;
+  text-align: center;
+  font-size: 11px;
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.stab.active {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+  background: var(--sidebar-bg);
+}
 
-        .library-item:hover { border-color: #667eea; transform: translateX(5px); box-shadow: 0 5px 15px rgba(102,126,234,0.2); }
-        .library-item.active { border-color: #667eea; background: #f0f4ff; }
-        .library-item.dragging { opacity: 0.6; box-shadow: 0 0 0 2px #764ba2; }
-        .library-item.drag-over { border-color: #764ba2; box-shadow: 0 0 0 2px #667eea; transform: translateX(5px) scale(1.02); }
+.sidebar-pane {
+  display: none;
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+}
+.sidebar-pane.active { display: flex; flex-direction: column; }
 
-        .library-item-main { flex: 1; }
-        .library-item-title { font-weight: 600; color: #333; margin-bottom: 5px; font-size: 14px; }
-        .library-item-progress { font-size: 12px; color: #6c757d; margin-bottom: 8px; }
+/* Folder controls */
+.folder-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
 
-        .progress-bar { height: 4px; background: #e0e0e0; border-radius: 2px; overflow: hidden; }
-        .progress-fill { height: 100%; background: linear-gradient(90deg, #667eea, #764ba2); transition: width 0.3s; }
+.folder-select {
+  flex: 1;
+  min-width: 100px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: 'Segoe UI', sans-serif;
+  background: var(--white);
+  color: var(--text);
+  cursor: pointer;
+}
+.folder-select:focus { outline: none; border-color: var(--accent); }
 
-        .library-item-right { display: flex; flex-direction: column; gap: 4px; }
+.folder-action {
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--white);
+  font-size: 11px;
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 600;
+  color: var(--text-mid);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.folder-action:hover { background: var(--page-dim); color: var(--text); }
 
-        .book-menu-btn {
-            background: transparent;
-            border: none;
-            cursor: pointer;
-            font-size: 18px;
-            line-height: 1;
-            padding: 2px 4px;
-            color: #666;
-        }
-        .book-menu-btn:hover { color: #667eea; }
+.folder-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-bottom: 12px;
+}
 
-        .book-menu-dropdown {
-            position: absolute;
-            right: 10px;
-            top: 35px;
-            background: white;
-            border: 1px solid #dee2e6;
-            border-radius: 6px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            min-width: 180px;
-            z-index: 100;
-            display: none;
-        }
-        .book-menu-dropdown.open { display: block; }
-        .book-menu-item { padding: 8px 10px; font-size: 13px; cursor: pointer; }
-        .book-menu-item:hover { background: #f1f3f5; }
-        .book-menu-item.disabled { color: #adb5bd; cursor: default; }
+.fpill {
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: var(--page-dim);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 600;
+  color: var(--text-mid);
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.fpill:hover, .fpill.active { background: var(--ink); color: var(--accent); border-color: var(--ink); }
 
-        .toc-item {
-            padding: 10px;
-            cursor: pointer;
-            border-radius: 5px;
-            margin-bottom: 5px;
-            transition: all 0.2s;
-            font-size: 14px;
-        }
-        .toc-item:hover { background: #e9ecef; }
+/* Library items */
+.lib-item {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  transition: all 0.15s;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+}
+.lib-item:hover { border-color: var(--accent); box-shadow: var(--shadow); }
+.lib-item.active { border-color: var(--accent); background: #fdf9f0; }
+.lib-item.dragging { opacity: 0.5; }
+.lib-item.drag-over { border-color: var(--ink); box-shadow: 0 0 0 2px var(--accent); }
 
-        .viewer-container { flex: 1; display: flex; flex-direction: column; background: #525659; min-width: 0; }
+.lib-item-spine {
+  width: 4px;
+  background: var(--border);
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.lib-item.active .lib-item-spine { background: var(--accent); }
+.lib-item:hover .lib-item-spine { background: var(--accent); }
 
-        .toolbar {
-            background: #2c3034;
-            padding: 15px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            color: white;
-        }
+.lib-item-body {
+  flex: 1;
+  padding: 10px 10px 10px 10px;
+  min-width: 0;
+}
 
-        .toolbar-left, .toolbar-right { display: flex; gap: 10px; align-items: center; }
+.lib-item-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: Georgia, serif;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
 
-        .toolbar-btn {
-            background: #3c4044;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-        .toolbar-btn:hover { background: #4c5054; }
-        .toolbar-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.lib-item-meta {
+  font-size: 11px;
+  font-family: 'Segoe UI', sans-serif;
+  color: var(--text-faint);
+  margin-bottom: 6px;
+}
 
-        .page-info { display: flex; align-items: center; gap: 10px; }
+.progress-bar {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s;
+}
 
-        .page-input {
-            width: 60px;
-            padding: 5px;
-            border-radius: 5px;
-            border: 1px solid #5c6064;
-            background: #3c4044;
-            color: white;
-            text-align: center;
-        }
+.lib-item-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  padding: 8px 8px 8px 0;
+  flex-shrink: 0;
+}
 
-        .pdf-viewer {
-            flex: 1;
-            overflow-y: auto;
-            display: flex;
-            justify-content: center;
-            padding: 20px;
-        }
+.lib-menu-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-faint);
+  padding: 2px 5px;
+  border-radius: 3px;
+  line-height: 1;
+  font-family: 'Segoe UI', sans-serif;
+  letter-spacing: 0.1em;
+}
+.lib-menu-btn:hover { color: var(--text); background: var(--page-dim); }
 
-        .pdf-canvas-container { background: white; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
+.lib-del-btn {
+  background: none;
+  border: 1px solid #ddd;
+  cursor: pointer;
+  font-size: 10px;
+  color: var(--danger);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  transition: all 0.15s;
+}
+.lib-del-btn:hover { background: var(--danger); color: white; border-color: var(--danger); }
 
-        .loading-skeleton {
-            background: white;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-            position: relative;
-            overflow: hidden;
-        }
-        .loading-skeleton::after {
-            content: '';
-            position: absolute;
-            top: 0; left: -100%;
-            width: 100%; height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(102,126,234,0.15), transparent);
-            animation: shimmer 1s infinite;
-        }
-        @keyframes shimmer { to { left: 100%; } }
+.lib-dropdown {
+  position: absolute;
+  right: 8px;
+  top: 32px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  box-shadow: var(--shadow-lg);
+  min-width: 170px;
+  z-index: 200;
+  display: none;
+}
+.lib-dropdown.open { display: block; }
 
-        .load-bar {
-            position: fixed;
-            top: 0; left: 0;
-            height: 3px;
-            background: linear-gradient(90deg, #667eea, #764ba2);
-            transition: width 0.2s ease;
-            z-index: 9999;
-            border-radius: 0 2px 2px 0;
-        }
+.lib-dd-item {
+  padding: 8px 12px;
+  font-size: 12px;
+  font-family: 'Segoe UI', sans-serif;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.lib-dd-item:hover { background: var(--page-dim); }
+.lib-dd-item.disabled { color: var(--text-faint); cursor: default; }
+.lib-dd-item.disabled:hover { background: none; }
 
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: rgba(0,0,0,0.7);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-        .modal.active { display: flex; }
+.cache-badge {
+  display: inline-block;
+  font-size: 8px;
+  background: var(--success);
+  color: white;
+  padding: 1px 5px;
+  border-radius: 99px;
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
 
-        .modal-content {
-            background: white;
-            padding: 30px;
-            border-radius: 15px;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-        }
+/* TOC */
+.toc-item {
+  padding: 7px 10px;
+  font-size: 13px;
+  font-family: Georgia, serif;
+  color: var(--text);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.12s;
+  line-height: 1.4;
+}
+.toc-item:hover { background: var(--page-dim); }
 
-        .modal-header { font-size: 24px; font-weight: 600; margin-bottom: 20px; color: #333; }
-        .form-group { margin-bottom: 20px; }
-        .form-label { display: block; margin-bottom: 8px; font-weight: 500; color: #555; }
+/* Empty state */
+.empty-state {
+  text-align: center;
+  padding: 40px 16px;
+  color: var(--text-faint);
+  font-family: 'Segoe UI', sans-serif;
+}
+.empty-state-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--text-mid);
+}
+.empty-state-desc {
+  font-size: 12px;
+  line-height: 1.6;
+}
 
-        .form-input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: all 0.3s;
-        }
-        .form-input:focus { outline: none; border-color: #667eea; }
+/* ── VIEWER ── */
+.viewer-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--viewer-bg);
+  min-width: 0;
+  overflow: hidden;
+}
 
-        .modal-buttons { display: flex; gap: 10px; justify-content: flex-end; }
+.toolbar {
+  background: var(--toolbar-bg);
+  padding: 8px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
 
-        .empty-state { text-align: center; padding: 40px 20px; color: #6c757d; }
-        .empty-state-icon { font-size: 48px; margin-bottom: 15px; }
+.toolbar-group { display: flex; align-items: center; gap: 8px; }
 
-        .zoom-control { display: flex; align-items: center; gap: 10px; }
+.tbtn {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.8);
+  border: 1px solid rgba(255,255,255,0.1);
+  padding: 5px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.tbtn:hover { background: rgba(255,255,255,0.14); color: white; }
+.tbtn:disabled { opacity: 0.3; cursor: not-allowed; }
 
-        .delete-btn {
-            background: #dc3545;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 12px;
-            margin-top: 5px;
-        }
-        .delete-btn:hover { background: #c82333; }
+.page-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255,255,255,0.6);
+  font-size: 12px;
+  font-family: 'Segoe UI', sans-serif;
+}
 
-        .cache-badge {
-            display: inline-block;
-            font-size: 9px;
-            background: #28a745;
-            color: white;
-            padding: 1px 5px;
-            border-radius: 999px;
-            margin-left: 4px;
-            vertical-align: middle;
-            font-weight: 600;
-            letter-spacing: 0.3px;
-        }
+.page-input {
+  width: 52px;
+  padding: 4px 6px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 4px;
+  color: white;
+  text-align: center;
+  font-size: 13px;
+  font-family: 'Segoe UI', sans-serif;
+}
+.page-input:focus { outline: none; border-color: var(--accent); }
 
-        ::-webkit-scrollbar { width: 10px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #888; border-radius: 5px; }
-        ::-webkit-scrollbar-thumb:hover { background: #555; }
+.zoom-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
 
-        .dict-panel {
-            width: 0;
-            min-width: 0;
-            background: #fafafa;
-            border-left: 1px solid #e0e0e0;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            transition: width 0.3s ease, min-width 0.3s ease;
-            flex-shrink: 0;
-        }
-        .dict-panel.open {
-            width: 360px;
-            min-width: 320px;
-        }
-        .dict-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 16px 18px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-shrink: 0;
-        }
-        .dict-header-title { font-size: 15px; font-weight: 600; flex: 1; }
-        .dict-close-btn {
-            background: rgba(255,255,255,0.2);
-            border: none;
-            color: white;
-            cursor: pointer;
-            border-radius: 6px;
-            padding: 4px 10px;
-            font-size: 16px;
-            line-height: 1;
-        }
-        .dict-close-btn:hover { background: rgba(255,255,255,0.35); }
-        .dict-search-wrap {
-            padding: 14px 16px;
-            border-bottom: 1px solid #e0e0e0;
-            flex-shrink: 0;
-            display: flex;
-            gap: 8px;
-        }
-        .dict-input {
-            flex: 1;
-            padding: 9px 12px;
-            border: 1.5px solid #d0d0d0;
-            border-radius: 8px;
-            font-size: 14px;
-            background: white;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        .dict-input:focus { border-color: #667eea; }
-        .dict-lookup-btn {
-            padding: 9px 14px;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 13px;
-            font-weight: 500;
-            white-space: nowrap;
-        }
-        .dict-lookup-btn:hover { opacity: 0.9; }
-        .dict-body { flex: 1; overflow-y: auto; padding: 16px; }
-        .dict-empty { text-align: center; padding: 40px 20px; color: #999; }
-        .dict-empty-icon { font-size: 36px; margin-bottom: 12px; color: #ccc; }
-        .dict-word-heading { font-size: 22px; font-weight: 700; color: #222; margin-bottom: 2px; }
-        .dict-phonetic { font-size: 14px; color: #764ba2; font-style: italic; margin-bottom: 10px; }
-        .dict-audio-btn {
-            background: none;
-            border: 1.5px solid #764ba2;
-            color: #764ba2;
-            border-radius: 6px;
-            padding: 3px 10px;
-            font-size: 12px;
-            cursor: pointer;
-            margin-left: 8px;
-            vertical-align: middle;
-        }
-        .dict-audio-btn:hover { background: #f0eaff; }
-        .dict-section { margin-bottom: 16px; }
-        .dict-pos-badge {
-            display: inline-block;
-            font-size: 11px;
-            font-weight: 600;
-            background: #ede9fe;
-            color: #5b21b6;
-            padding: 2px 9px;
-            border-radius: 999px;
-            margin-bottom: 8px;
-            letter-spacing: 0.4px;
-        }
-        .dict-definition {
-            font-size: 14px;
-            color: #333;
-            margin-bottom: 6px;
-            padding-left: 12px;
-            border-left: 3px solid #c4b5fd;
-        }
-        .dict-example {
-            font-size: 13px;
-            color: #666;
-            font-style: italic;
-            padding-left: 12px;
-            margin-top: 2px;
-            margin-bottom: 8px;
-        }
-        .dict-divider { height: 1px; background: #eee; margin: 12px 0; }
-        .dict-meta-label {
-            font-size: 11px;
-            font-weight: 600;
-            color: #888;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 5px;
-        }
-        .dict-synonyms { display: flex; flex-wrap: wrap; gap: 6px; }
-        .dict-syn-pill {
-            font-size: 12px;
-            background: #f0f4ff;
-            color: #667eea;
-            border: 1px solid #c7d2fe;
-            border-radius: 999px;
-            padding: 3px 10px;
-            cursor: pointer;
-        }
-        .dict-syn-pill:hover { background: #e0e7ff; }
-        .dict-error {
-            color: #c0392b;
-            font-size: 14px;
-            padding: 12px;
-            background: #fef2f2;
-            border-radius: 8px;
-            border: 1px solid #fecaca;
-            margin-bottom: 14px;
-        }
-        .dict-loading { text-align: center; padding: 30px; color: #667eea; font-size: 14px; }
-        .dict-spinner {
-            display: inline-block;
-            width: 20px; height: 20px;
-            border: 2px solid #e0e0e0;
-            border-top-color: #667eea;
-            border-radius: 50%;
-            animation: spin 0.7s linear infinite;
-            margin-bottom: 8px;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .dict-history { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
-        .dict-hist-pill {
-            font-size: 11px;
-            background: #f3f4f6;
-            color: #555;
-            border: 1px solid #d1d5db;
-            border-radius: 999px;
-            padding: 2px 8px;
-            cursor: pointer;
-        }
-        .dict-hist-pill:hover { background: #e5e7eb; }
-        .dict-origin {
-            font-size: 13px;
-            color: #555;
-            font-style: italic;
-            background: #f8f8ff;
-            border-left: 3px solid #a5b4fc;
-            padding: 8px 10px;
-            border-radius: 0 6px 6px 0;
-            margin-top: 4px;
-        }
-        .dict-source {
-            margin-top: 14px;
-            font-size: 11px;
-            color: #bbb;
-        }
-        .dict-source a { color: #bbb; }
+.zoom-btn {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.8);
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  font-family: 'Segoe UI', sans-serif;
+}
+.zoom-btn:hover { background: rgba(255,255,255,0.14); color: white; }
 
-        /* Load status message */
-        .load-status {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(44,48,52,0.92);
-            color: white;
-            padding: 10px 16px;
-            border-radius: 8px;
-            font-size: 13px;
-            z-index: 9999;
-            max-width: 320px;
-            display: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
-        .load-status.visible { display: block; }
-    </style>
+.zoom-label {
+  font-size: 12px;
+  font-family: 'Segoe UI', sans-serif;
+  color: rgba(255,255,255,0.5);
+  min-width: 38px;
+  text-align: center;
+}
+
+.pdf-scroll {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  justify-content: center;
+  padding: 24px;
+}
+
+.pdf-canvas-wrap {
+  background: white;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  display: inline-block;
+  line-height: 0;
+}
+
+.skeleton {
+  background: #e0ddd8;
+  position: relative;
+  overflow: hidden;
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+  animation: shimmer 1.2s infinite;
+}
+@keyframes shimmer { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+
+/* ── DICT PANEL ── */
+.dict-panel {
+  width: 0;
+  min-width: 0;
+  overflow: hidden;
+  background: var(--page);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  transition: width 0.25s ease, min-width 0.25s ease;
+}
+.dict-panel.open { width: 340px; min-width: 300px; }
+
+.dict-head {
+  background: var(--ink);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.dict-head-title {
+  flex: 1;
+  font-size: 12px;
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.dict-close {
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: rgba(255,255,255,0.6);
+  cursor: pointer;
+  border-radius: 3px;
+  padding: 3px 8px;
+  font-size: 14px;
+  transition: all 0.15s;
+}
+.dict-close:hover { background: rgba(255,255,255,0.18); color: white; }
+
+.dict-search {
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  gap: 7px;
+  flex-shrink: 0;
+}
+.dict-input {
+  flex: 1;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: Georgia, serif;
+  background: white;
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.dict-input:focus { border-color: var(--accent); }
+.dict-lookup-btn {
+  padding: 7px 12px;
+  background: var(--ink);
+  color: var(--accent);
+  border: none;
+  border-radius: 4px;
+  font-size: 11px;
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.dict-lookup-btn:hover { background: var(--ink-light); }
+
+.dict-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  font-family: Georgia, serif;
+}
+
+.dict-empty {
+  text-align: center;
+  padding: 30px 16px;
+  color: var(--text-faint);
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.dict-empty-A {
+  font-size: 40px;
+  font-family: Georgia, serif;
+  font-weight: 700;
+  color: var(--border);
+  display: block;
+  margin-bottom: 12px;
+  letter-spacing: -0.02em;
+}
+
+.dict-word { font-size: 22px; font-weight: 700; color: var(--ink); margin-bottom: 3px; }
+.dict-phonetic { font-size: 14px; color: var(--accent-dim); font-style: italic; margin-bottom: 10px; }
+
+.dict-audio-btn {
+  background: none;
+  border: 1px solid var(--accent-dim);
+  color: var(--accent-dim);
+  border-radius: 3px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 600;
+  cursor: pointer;
+  margin-left: 7px;
+  vertical-align: middle;
+  transition: all 0.15s;
+}
+.dict-audio-btn:hover { background: var(--accent-dim); color: white; }
+
+.dict-pos {
+  display: inline-block;
+  font-size: 10px;
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 700;
+  background: var(--ink);
+  color: var(--accent);
+  padding: 2px 8px;
+  border-radius: 2px;
+  margin-bottom: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dict-section { margin-bottom: 14px; }
+
+.dict-def {
+  font-size: 13px;
+  color: var(--text);
+  margin-bottom: 5px;
+  padding-left: 10px;
+  border-left: 2px solid var(--border);
+  line-height: 1.5;
+}
+.dict-ex {
+  font-size: 12px;
+  color: var(--text-faint);
+  font-style: italic;
+  padding-left: 10px;
+  margin-top: 2px;
+  margin-bottom: 7px;
+  line-height: 1.5;
+}
+
+.dict-hr { height: 1px; background: var(--border); margin: 12px 0; }
+
+.dict-meta-label {
+  font-size: 10px;
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-faint);
+  margin-bottom: 7px;
+}
+
+.dict-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+.dict-pill {
+  font-size: 11px;
+  font-family: 'Segoe UI', sans-serif;
+  background: var(--page-dim);
+  border: 1px solid var(--border);
+  color: var(--text-mid);
+  padding: 2px 9px;
+  border-radius: 99px;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.dict-pill:hover { background: var(--ink); color: var(--accent); border-color: var(--ink); }
+.dict-pill.ant { background: #fff5f5; border-color: #fcc; color: #8b2635; }
+.dict-pill.ant:hover { background: var(--danger); color: white; border-color: var(--danger); }
+
+.dict-origin {
+  font-size: 12px;
+  color: var(--text-mid);
+  font-style: italic;
+  border-left: 2px solid var(--accent);
+  padding: 6px 10px;
+  line-height: 1.5;
+  background: var(--page-dim);
+}
+
+.dict-source { margin-top: 12px; font-size: 10px; font-family: 'Segoe UI', sans-serif; color: var(--border); }
+.dict-source a { color: var(--border); }
+
+.dict-history { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 12px; }
+.dict-hist-pill {
+  font-size: 10px;
+  font-family: 'Segoe UI', sans-serif;
+  background: var(--page-dim);
+  border: 1px solid var(--border);
+  color: var(--text-faint);
+  padding: 2px 8px;
+  border-radius: 99px;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.dict-hist-pill:hover { background: var(--ink); color: var(--accent); border-color: var(--ink); }
+
+.dict-error {
+  font-size: 13px;
+  font-family: 'Segoe UI', sans-serif;
+  color: var(--danger);
+  background: #fff5f5;
+  border: 1px solid #fcc;
+  border-radius: 4px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
+.dict-loading {
+  text-align: center;
+  padding: 30px;
+  font-family: 'Segoe UI', sans-serif;
+  font-size: 13px;
+  color: var(--text-mid);
+}
+.dict-spinner {
+  display: inline-block;
+  width: 18px; height: 18px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin-bottom: 8px;
+  vertical-align: middle;
+  margin-right: 8px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── MODAL ── */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10,10,20,0.75);
+  z-index: 500;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+
+.modal-box {
+  background: var(--page);
+  border-radius: 8px;
+  width: 90%;
+  max-width: 460px;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.modal-header {
+  background: var(--ink);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal-title {
+  font-size: 14px;
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.modal-close {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  font-size: 18px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 4px;
+}
+.modal-close:hover { color: white; }
+
+.modal-body { padding: 20px; }
+
+.field { margin-bottom: 16px; }
+.field-label {
+  display: block;
+  font-size: 11px;
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-mid);
+  margin-bottom: 6px;
+}
+.field-input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: Georgia, serif;
+  background: white;
+  color: var(--text);
+  transition: border-color 0.15s;
+}
+.field-input:focus { outline: none; border-color: var(--accent); }
+
+.modal-footer {
+  padding: 12px 20px 16px;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.mbtn {
+  padding: 8px 18px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: 'Segoe UI', sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition: all 0.15s;
+}
+.mbtn-cancel { background: var(--page-dim); color: var(--text-mid); border: 1px solid var(--border); }
+.mbtn-cancel:hover { background: var(--border); }
+.mbtn-confirm { background: var(--ink); color: var(--accent); }
+.mbtn-confirm:hover { background: var(--ink-light); }
+.mbtn-confirm:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── LOAD BAR ── */
+.load-bar {
+  position: fixed;
+  top: 0; left: 0;
+  height: 2px;
+  background: var(--accent);
+  transition: width 0.2s ease;
+  z-index: 9999;
+}
+
+/* ── STATUS TOAST ── */
+.toast {
+  position: fixed;
+  bottom: 18px;
+  right: 18px;
+  background: rgba(26,26,46,0.95);
+  color: rgba(255,255,255,0.9);
+  padding: 9px 14px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-family: 'Segoe UI', sans-serif;
+  z-index: 9999;
+  max-width: 300px;
+  display: none;
+  box-shadow: var(--shadow-lg);
+  border-left: 3px solid var(--accent);
+}
+.toast.visible { display: block; }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+
+/* viewer empty */
+.viewer-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: rgba(255,255,255,0.25);
+  text-align: center;
+  font-family: 'Segoe UI', sans-serif;
+  gap: 12px;
+  padding: 40px;
+}
+.viewer-empty-title { font-size: 18px; font-weight: 600; color: rgba(255,255,255,0.35); }
+.viewer-empty-desc { font-size: 13px; line-height: 1.6; }
+</style>
 </head>
 <body>
+
 <div class="load-bar" id="loadBar" style="width:0"></div>
-<div class="load-status" id="loadStatus"></div>
+<div class="toast" id="toast"></div>
 
-<div class="container">
-    <div class="header">
-        <h1>Continua | PDF Reader PRO</h1>
-        <div class="header-buttons">
-            <button class="btn btn-primary" onclick="openAddModal()">+ Add PDF</button>
-            <button class="btn btn-dict" id="dictToggleBtn" onclick="toggleDictPanel()">Dictionary</button>
-            <button class="btn btn-secondary" onclick="toggleSidebar()">Menu</button>
+<div class="app">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-brand">
+      <span class="header-brand-name">Continua</span>
+      <span class="header-brand-sub">PDF Reader PRO</span>
+    </div>
+    <div class="header-actions">
+      <button class="hbtn hbtn-primary" onclick="openAddModal()">+ Add PDF</button>
+      <button class="hbtn hbtn-dict" id="dictToggleBtn" onclick="toggleDict()">Dictionary</button>
+      <button class="hbtn hbtn-ghost" onclick="toggleSidebar()">Library</button>
+    </div>
+  </header>
+
+  <!-- BODY -->
+  <div class="body">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-tabs">
+        <div class="stab active" id="tab-library" onclick="switchTab('library')">Library</div>
+        <div class="stab" id="tab-toc" onclick="switchTab('toc')">Contents</div>
+      </div>
+
+      <!-- Library pane -->
+      <div class="sidebar-pane active" id="pane-library">
+        <div class="folder-controls">
+          <select id="folderSelect" class="folder-select" onchange="changeFolder()"></select>
+          <button class="folder-action" onclick="addFolder()">+ Folder</button>
+          <button class="folder-action" onclick="renameFolder()">Rename</button>
+          <button class="folder-action" onclick="deleteFolder()">Delete</button>
         </div>
+        <div class="folder-pills" id="folderPills"></div>
+        <div id="libraryList"></div>
+      </div>
+
+      <!-- TOC pane -->
+      <div class="sidebar-pane" id="pane-toc">
+        <div id="tocList">
+          <div class="empty-state">
+            <div class="empty-state-title">No document open</div>
+            <div class="empty-state-desc">Open a PDF to see its table of contents here.</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- VIEWER -->
+    <div class="viewer-wrap">
+      <div class="toolbar">
+        <div class="toolbar-group">
+          <button class="tbtn" id="prevBtn" onclick="prevPage()">&#8592; Prev</button>
+          <div class="page-nav">
+            <input type="number" class="page-input" id="pageInput" value="1" min="1" onchange="goToPage()">
+            <span>/ <span id="totalPages">0</span></span>
+          </div>
+          <button class="tbtn" id="nextBtn" onclick="nextPage()">Next &#8594;</button>
+        </div>
+        <div class="toolbar-group">
+          <div class="zoom-group">
+            <button class="zoom-btn" onclick="zoomOut()">&#8722;</button>
+            <span class="zoom-label" id="zoomLabel">100%</span>
+            <button class="zoom-btn" onclick="zoomIn()">&#43;</button>
+          </div>
+          <button class="tbtn" id="fullscreenBtn" onclick="toggleFullscreen()">Fullscreen</button>
+        </div>
+      </div>
+
+      <div class="pdf-scroll" id="pdfViewer">
+        <div class="viewer-empty">
+          <div class="viewer-empty-title">No document open</div>
+          <div class="viewer-empty-desc">Add a PDF from a URL using the button above,<br>or select one from your library.</div>
+        </div>
+      </div>
     </div>
 
-    <div class="main-content">
-        <div class="sidebar" id="sidebar">
-            <div class="sidebar-tabs">
-                <div class="tab active" onclick="switchTab('library')">Library</div>
-                <div class="tab" onclick="switchTab('toc')">Contents</div>
-            </div>
-            <div class="tab-content" id="libraryTab">
-                <div class="folder-bar">
-                    <select id="folderSelect" class="folder-select" onchange="changeFolder()"></select>
-                    <button class="folder-pill" onclick="addFolder()">+F</button>
-                    <button class="folder-pill" onclick="renameFolder()">Rename</button>
-                    <button class="folder-pill" onclick="deleteFolder()">Del</button>
-                </div>
-                <div id="folderPalette"></div>
-                <div id="libraryList"></div>
-            </div>
-            <div class="tab-content" id="tocTab" style="display: none;">
-                <div id="tocList"></div>
-            </div>
+    <!-- DICTIONARY -->
+    <div class="dict-panel" id="dictPanel">
+      <div class="dict-head">
+        <span class="dict-head-title">Dictionary</span>
+        <button class="dict-close" onclick="toggleDict()">&#215;</button>
+      </div>
+      <div class="dict-search">
+        <input type="text" class="dict-input" id="dictInput"
+          placeholder="Look up a word..."
+          onkeydown="if(event.key==='Enter') lookupWord()"
+          autocomplete="off" autocorrect="off" spellcheck="false">
+        <button class="dict-lookup-btn" onclick="lookupWord()">Look up</button>
+      </div>
+      <div class="dict-body" id="dictBody">
+        <div class="dict-empty">
+          <span class="dict-empty-A">A</span>
+          Enter any word to get its definition, pronunciation, part of speech, etymology, synonyms, antonyms, and example sentences.
         </div>
-
-        <div class="viewer-container">
-            <div class="toolbar">
-                <div class="toolbar-left">
-                    <button class="toolbar-btn" onclick="prevPage()" id="prevBtn">&#8592; Previous</button>
-                    <div class="page-info">
-                        <input type="number" class="page-input" id="pageInput" value="1" min="1" onchange="goToPage()">
-                        <span>/ <span id="totalPages">0</span></span>
-                    </div>
-                    <button class="toolbar-btn" onclick="nextPage()" id="nextBtn">Next &#8594;</button>
-                </div>
-                <div class="toolbar-right">
-                    <div class="zoom-control">
-                        <button class="toolbar-btn" onclick="zoomOut()">-</button>
-                        <span id="zoomLevel">100%</span>
-                        <button class="toolbar-btn" onclick="zoomIn()">+</button>
-                    </div>
-                    <button class="toolbar-btn" onclick="toggleFullscreen()" id="fullscreenBtn">Fullscreen</button>
-                </div>
-            </div>
-            <div class="pdf-viewer" id="pdfViewer">
-                <div class="empty-state">
-                    <div class="empty-state-icon"></div>
-                    <h3>No PDF Loaded</h3>
-                    <p>Click "Add PDF" to load a document from URL</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="dict-panel" id="dictPanel">
-            <div class="dict-header">
-                <span class="dict-header-title">Dictionary</span>
-                <button class="dict-close-btn" onclick="toggleDictPanel()">&#215;</button>
-            </div>
-            <div class="dict-search-wrap">
-                <input
-                    type="text"
-                    class="dict-input"
-                    id="dictInput"
-                    placeholder="Type a word..."
-                    onkeydown="if(event.key==='Enter') lookupWord()"
-                    autocomplete="off"
-                    autocorrect="off"
-                    spellcheck="false"
-                >
-                <button class="dict-lookup-btn" onclick="lookupWord()">Look up</button>
-            </div>
-            <div class="dict-body" id="dictBody">
-                <div class="dict-empty">
-                    <div class="dict-empty-icon">A</div>
-                    <p style="font-size:13px;color:#aaa;line-height:1.6;">
-                        Enter any word to get its full definition, pronunciation, part of speech, etymology, synonyms, antonyms, and example sentences.
-                    </p>
-                </div>
-            </div>
-        </div>
+      </div>
     </div>
-</div>
 
-<div class="modal" id="addModal" onclick="if(event.target === this) closeAddModal()">
-    <div class="modal-content">
-        <div class="modal-header">
-            Add PDF Document
-            <button style="float:right;background:none;border:none;font-size:24px;cursor:pointer;color:#999" onclick="closeAddModal()">&#215;</button>
-        </div>
-        <div class="form-group">
-            <label class="form-label">Document Name</label>
-            <input type="text" class="form-input" id="pdfName" placeholder="Enter document name">
-        </div>
-        <div class="form-group">
-            <label class="form-label">PDF URL</label>
-            <input type="text" class="form-input" id="pdfUrl" placeholder="https://example.com/document.pdf">
-        </div>
-        <div class="modal-buttons">
-            <button class="btn btn-secondary" onclick="closeAddModal()">Cancel</button>
-            <button class="btn btn-primary" onclick="addPdf()">Add to Library</button>
-        </div>
+  </div><!-- /body -->
+</div><!-- /app -->
+
+<!-- ADD PDF MODAL -->
+<div class="modal-overlay" id="addModal" onclick="if(event.target===this) closeAddModal()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">Add PDF Document</span>
+      <button class="modal-close" onclick="closeAddModal()">&#215;</button>
     </div>
+    <div class="modal-body">
+      <div class="field">
+        <label class="field-label" for="pdfName">Document Name</label>
+        <input type="text" class="field-input" id="pdfName" placeholder="e.g. Never Split the Difference">
+      </div>
+      <div class="field">
+        <label class="field-label" for="pdfUrl">PDF URL</label>
+        <input type="text" class="field-input" id="pdfUrl" placeholder="https://example.com/document.pdf">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="mbtn mbtn-cancel" onclick="closeAddModal()">Cancel</button>
+      <button class="mbtn mbtn-confirm" id="addBtn" onclick="addPdf()">Add to Library</button>
+    </div>
+  </div>
 </div>
 
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-// ─── STATUS TOAST ─────────────────────────────────────────────────────────────
-let statusTimer = null;
-function showStatus(msg, persist) {
-    const el = document.getElementById('loadStatus');
-    el.textContent = msg;
-    el.classList.add('visible');
-    if (statusTimer) clearTimeout(statusTimer);
-    if (!persist) statusTimer = setTimeout(() => el.classList.remove('visible'), 3500);
+// ── TOAST ──────────────────────────────────────────────────────────────────────
+let toastTimer = null;
+function showToast(msg, persist) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('visible');
+  if (toastTimer) clearTimeout(toastTimer);
+  if (!persist) toastTimer = setTimeout(() => el.classList.remove('visible'), 3500);
 }
-function hideStatus() {
-    document.getElementById('loadStatus').classList.remove('visible');
-    if (statusTimer) clearTimeout(statusTimer);
+function hideToast() {
+  document.getElementById('toast').classList.remove('visible');
+  if (toastTimer) clearTimeout(toastTimer);
 }
 
-// ─── SESSION-LEVEL DOC CACHE ──────────────────────────────────────────────────
-const sessionDocCache = new Map();
+// ── LOAD BAR ───────────────────────────────────────────────────────────────────
+function setLoadBar(pct) {
+  const b = document.getElementById('loadBar');
+  b.style.width = pct + '%';
+  if (pct >= 100) setTimeout(() => { b.style.width = '0'; }, 400);
+}
 
-// ─── RENDER CACHE ─────────────────────────────────────────────────────────────
-const renderCache = new Map();
-const RENDER_CACHE_MAX = 30;
-const renderCacheOrder = [];
-
-// ─── PRELOAD ──────────────────────────────────────────────────────────────────
-let preloadTimeout = null;
-
-// ─── PERSISTENT PDF BINARY CACHE (IndexedDB) ─────────────────────────────────
-const IDB_NAME = 'continua_pdf_cache';
-const IDB_STORE = 'pdfs';
+// ── IDB CACHE ──────────────────────────────────────────────────────────────────
+const IDB_NAME = 'continua_pdf_cache', IDB_STORE = 'pdfs';
 let idb = null;
-
-const idbReady = new Promise((resolve) => {
-    const req = indexedDB.open(IDB_NAME, 1);
-    req.onupgradeneeded = e => {
-        const db = e.target.result;
-        if (!db.objectStoreNames.contains(IDB_STORE)) {
-            const store = db.createObjectStore(IDB_STORE, { keyPath: 'bookId' });
-            store.createIndex('accessed', 'accessed', { unique: false });
-        }
-    };
-    req.onsuccess = e => { idb = e.target.result; resolve(idb); };
-    req.onerror = () => resolve(null);
+const idbReady = new Promise(resolve => {
+  const req = indexedDB.open(IDB_NAME, 1);
+  req.onupgradeneeded = e => {
+    const db = e.target.result;
+    if (!db.objectStoreNames.contains(IDB_STORE)) {
+      db.createObjectStore(IDB_STORE, { keyPath: 'bookId' }).createIndex('accessed','accessed',{unique:false});
+    }
+  };
+  req.onsuccess = e => { idb = e.target.result; resolve(idb); };
+  req.onerror = () => resolve(null);
 });
 
-async function idbGet(bookId) {
-    try {
-        const db = await idbReady;
-        if (!db) return null;
-        return new Promise((resolve) => {
-            const tx = db.transaction(IDB_STORE, 'readonly');
-            const req = tx.objectStore(IDB_STORE).get(String(bookId));
-            req.onsuccess = () => resolve(req.result || null);
-            req.onerror = () => resolve(null);
-        });
-    } catch(_) { return null; }
+async function idbGet(id) {
+  try {
+    const db = await idbReady; if (!db) return null;
+    return new Promise(r => { const tx = db.transaction(IDB_STORE,'readonly'), req = tx.objectStore(IDB_STORE).get(String(id)); req.onsuccess = () => r(req.result||null); req.onerror = () => r(null); });
+  } catch(_) { return null; }
+}
+async function idbPut(id, buf) {
+  try {
+    const db = await idbReady; if (!db) return;
+    const all = await new Promise(r => { const tx = db.transaction(IDB_STORE,'readonly'), req = tx.objectStore(IDB_STORE).index('accessed').getAllKeys(); req.onsuccess = () => r(req.result); req.onerror = () => r([]); });
+    const tx = db.transaction(IDB_STORE,'readwrite'), store = tx.objectStore(IDB_STORE);
+    if (all.length >= 20) store.delete(all[0]);
+    store.put({ bookId: String(id), data: buf, accessed: Date.now(), size: buf.byteLength });
+  } catch(_) {}
+}
+async function idbDelete(id) {
+  try { const db = await idbReady; if (!db) return; db.transaction(IDB_STORE,'readwrite').objectStore(IDB_STORE).delete(String(id)); } catch(_) {}
+}
+function idbTouch(id) {
+  idbReady.then(db => {
+    if (!db) return;
+    const tx = db.transaction(IDB_STORE,'readwrite'), store = tx.objectStore(IDB_STORE), req = store.get(String(id));
+    req.onsuccess = () => { if (req.result) { req.result.accessed = Date.now(); store.put(req.result); } };
+  }).catch(()=>{});
+}
+async function idbGetAllIds() {
+  try {
+    const db = await idbReady; if (!db) return new Set();
+    return new Promise(r => { const tx = db.transaction(IDB_STORE,'readonly'), req = tx.objectStore(IDB_STORE).getAllKeys(); req.onsuccess = () => r(new Set(req.result.map(String))); req.onerror = () => r(new Set()); });
+  } catch(_) { return new Set(); }
 }
 
-async function idbPut(bookId, arrayBuffer) {
-    try {
-        const db = await idbReady;
-        if (!db) return;
-        const all = await new Promise(resolve => {
-            const tx = db.transaction(IDB_STORE, 'readonly');
-            const req = tx.objectStore(IDB_STORE).index('accessed').getAllKeys();
-            req.onsuccess = () => resolve(req.result);
-            req.onerror = () => resolve([]);
-        });
-        const tx = db.transaction(IDB_STORE, 'readwrite');
-        const store = tx.objectStore(IDB_STORE);
-        if (all.length >= 20) store.delete(all[0]);
-        store.put({ bookId: String(bookId), data: arrayBuffer, accessed: Date.now(), size: arrayBuffer.byteLength });
-    } catch(_) {}
-}
-
-async function idbDelete(bookId) {
-    try {
-        const db = await idbReady;
-        if (!db) return;
-        const tx = db.transaction(IDB_STORE, 'readwrite');
-        tx.objectStore(IDB_STORE).delete(String(bookId));
-    } catch (_) {}
-}
-
-function idbTouch(bookId) {
-    idbReady.then(db => {
-        if (!db) return;
-        const tx = db.transaction(IDB_STORE, 'readwrite');
-        const store = tx.objectStore(IDB_STORE);
-        const req = store.get(String(bookId));
-        req.onsuccess = () => { if (req.result) { req.result.accessed = Date.now(); store.put(req.result); } };
-    }).catch(() => {});
-}
-
-async function idbGetCachedIds() {
-    try {
-        const db = await idbReady;
-        if (!db) return new Set();
-        return new Promise(resolve => {
-            const tx = db.transaction(IDB_STORE, 'readonly');
-            const req = tx.objectStore(IDB_STORE).getAllKeys();
-            req.onsuccess = () => resolve(new Set(req.result.map(String)));
-            req.onerror = () => resolve(new Set());
-        });
-    } catch (_) { return new Set(); }
-}
-
-let cachedBookIds = new Set();
-idbGetCachedIds().then(ids => { cachedBookIds = ids; renderLibrary(); });
-
-// ─── STATE ────────────────────────────────────────────────────────────────────
+// ── STATE ──────────────────────────────────────────────────────────────────────
 let library = JSON.parse(localStorage.getItem('pdfLibrary') || '[]');
-let currentPage = 1;
-let totalPages = 0;
-let scale = 1.5;
-let pdfDoc = null;
-let currentPdfId = null;
-let renderInProgress = false;
-let pendingRender = null;
-
 let folders = JSON.parse(localStorage.getItem('pdfFolders') || '[]');
 let activeFolder = localStorage.getItem('pdfActiveFolder') || 'All';
+let currentPdfId = null, pdfDoc = null, currentPage = 1, totalPages = 0, scale = 1.5;
+let renderInProgress = false, pendingRender = null;
+let dragStart = null, dragTarget = null;
+let cachedIds = new Set();
 
-if (Array.isArray(folders) && typeof folders[0] === 'string') {
-    folders = folders.map(name => ({ id: 'fld_' + name, name, color: '#e9ecef', icon: '' }));
+const sessionCache = new Map();
+const renderCache = new Map();
+const renderOrder = [];
+const RENDER_MAX = 30;
+let preloadTimer = null;
+
+// normalise old data
+if (Array.isArray(folders) && folders.length && typeof folders[0] === 'string') {
+  folders = folders.map(n => ({ id: 'fld_'+n, name: n }));
 }
-if (!folders.length) {
-    folders = [{ id: 'fld_All', name: 'All', color: '#e9ecef', icon: '' }];
-    activeFolder = 'All';
-}
+if (!folders.length) { folders = [{ id:'fld_All', name:'All' }]; activeFolder = 'All'; }
 if (!activeFolder) activeFolder = 'All';
 
 library.forEach(b => {
-    if (!Array.isArray(b.folders)) {
-        b.folders = b.folder ? [b.folder] : ['All'];
-        delete b.folder;
-    }
-    if (!b.folders.includes('All')) b.folders.push('All');
+  if (!Array.isArray(b.folders)) { b.folders = b.folder ? [b.folder] : ['All']; delete b.folder; }
+  if (!b.folders.includes('All')) b.folders.push('All');
 });
 
-localStorage.setItem('pdfLibrary', JSON.stringify(library));
-localStorage.setItem('pdfFolders', JSON.stringify(folders));
-localStorage.setItem('pdfActiveFolder', activeFolder);
+function saveLib() { localStorage.setItem('pdfLibrary', JSON.stringify(library)); }
+function saveFolders() { localStorage.setItem('pdfFolders', JSON.stringify(folders)); localStorage.setItem('pdfActiveFolder', activeFolder); }
+saveLib(); saveFolders();
 
-let dragStartIndex = null, dragCurrentIndex = null, isDraggingLibraryItem = false;
+idbGetAllIds().then(ids => { cachedIds = ids; renderLibrary(); });
 
-// ─── LOAD BAR ─────────────────────────────────────────────────────────────────
-function setLoadBar(pct) {
-    const bar = document.getElementById('loadBar');
-    bar.style.width = pct + '%';
-    if (pct >= 100) setTimeout(() => { bar.style.width = '0'; }, 400);
+// ── FETCH / STRATEGIES ────────────────────────────────────────────────────────
+function fetchWithTimeout(url, ms=20000) {
+  const c = new AbortController(), t = setTimeout(()=>c.abort(), ms);
+  return fetch(url, { signal:c.signal, mode:'cors' }).finally(()=>clearTimeout(t));
 }
 
-// ─── FETCH WITH TIMEOUT ───────────────────────────────────────────────────────
-function fetchWithTimeout(url, timeoutMs = 20000) {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    return fetch(url, { signal: controller.signal, mode: 'cors' })
-        .finally(() => clearTimeout(timer));
-}
-
-// ─── PROXY STRATEGY ───────────────────────────────────────────────────────────
-// Returns an ordered list of strategies to try, sequentially.
-// Sequential (not race) avoids hammering proxies when the first works,
-// and gives cleaner status messages.
 function getStrategies(url) {
-    const enc = encodeURIComponent(url);
-    return [
-        // 1. Direct fetch — works for same-origin or CORS-enabled servers
-        { label: 'direct fetch', loader: () => fetchBytes(url) },
-        // 2. corsproxy.io — reliable, actively maintained as of 2025-2026
-        { label: 'corsproxy.io', loader: () => fetchBytes(`https://corsproxy.io/?url=${enc}`) },
-        // 3. allorigins raw — returns raw bytes, widely used
-        { label: 'allorigins', loader: () => fetchBytes(`https://api.allorigins.win/raw?url=${enc}`) },
-        // 4. cors-anywhere herokuapp — needs no header trick now
-        { label: 'cors.sh', loader: () => fetchBytes(`https://proxy.cors.sh/${url}`) },
-        // 5. thingproxy — simple, often available
-        { label: 'thingproxy', loader: () => fetchBytes(`https://thingproxy.freeboard.io/fetch/${url}`) },
-        // 6. pdfjsLib direct streaming — last resort, let pdfjs handle it
-        { label: 'pdfjs streaming', loader: () => pdfjsStreamLoad(url) },
-        { label: 'pdfjs via corsproxy', loader: () => pdfjsStreamLoad(`https://corsproxy.io/?url=${enc}`) },
-        { label: 'pdfjs via allorigins', loader: () => pdfjsStreamLoad(`https://api.allorigins.win/raw?url=${enc}`) },
-    ];
+  const enc = encodeURIComponent(url);
+  return [
+    { label:'direct',        load: ()=>fetchBytes(url) },
+    { label:'corsproxy.io',  load: ()=>fetchBytes(`https://corsproxy.io/?url=${enc}`) },
+    { label:'allorigins',    load: ()=>fetchBytes(`https://api.allorigins.win/raw?url=${enc}`) },
+    { label:'cors.sh',       load: ()=>fetchBytes(`https://proxy.cors.sh/${url}`) },
+    { label:'thingproxy',    load: ()=>fetchBytes(`https://thingproxy.freeboard.io/fetch/${url}`) },
+    { label:'pdfjs-direct',  load: ()=>pdfjsLoad(url) },
+    { label:'pdfjs-cors',    load: ()=>pdfjsLoad(`https://corsproxy.io/?url=${enc}`) },
+    { label:'pdfjs-origins', load: ()=>pdfjsLoad(`https://api.allorigins.win/raw?url=${enc}`) },
+  ];
 }
 
 async function fetchBytes(url) {
-    const res = await fetchWithTimeout(url, 20000);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const buf = await res.arrayBuffer();
-    if (buf.byteLength < 200) throw new Error('Response too small');
-    // Validate it looks like a PDF
-    const header = new Uint8Array(buf.slice(0, 5));
-    const sig = String.fromCharCode(...header);
-    if (!sig.startsWith('%PDF')) throw new Error('Not a valid PDF');
-    return { type: 'buffer', data: buf };
+  const res = await fetchWithTimeout(url, 20000);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const buf = await res.arrayBuffer();
+  if (buf.byteLength < 200) throw new Error('Response too small');
+  const sig = String.fromCharCode(...new Uint8Array(buf.slice(0,5)));
+  if (!sig.startsWith('%PDF')) throw new Error('Not a valid PDF');
+  return { type:'buffer', data:buf };
 }
 
-async function pdfjsStreamLoad(url) {
-    const cMapUrl = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/';
-    const doc = await pdfjsLib.getDocument({
-        url,
-        cMapUrl,
-        cMapPacked: true,
-        withCredentials: false,
-        disableAutoFetch: false,
-        disableStream: false,
-    }).promise;
-    return { type: 'doc', data: doc };
-}
-
-// ─── CORE PDF LOADER ──────────────────────────────────────────────────────────
 const cMapUrl = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/';
-const PDF_OPTIONS = { cMapUrl, cMapPacked: true, disableAutoFetch: false, disableStream: false };
+const PDF_OPTS = { cMapUrl, cMapPacked:true };
 
-async function loadPdfFast(url, bookId) {
-    // Tier 1: session memory
-    if (sessionDocCache.has(bookId)) {
-        idbTouch(bookId);
-        return sessionDocCache.get(bookId);
-    }
-
-    setLoadBar(10);
-
-    // Tier 2: IndexedDB
-    if (cachedBookIds.has(String(bookId))) {
-        showStatus('Loading from cache...', true);
-        const cached = await idbGet(bookId);
-        if (cached && cached.data) {
-            setLoadBar(60);
-            idbTouch(bookId);
-            try {
-                const doc = await pdfjsLib.getDocument({ ...PDF_OPTIONS, data: cached.data }).promise;
-                sessionDocCache.set(bookId, doc);
-                setLoadBar(100);
-                hideStatus();
-                return doc;
-            } catch (_) {
-                await idbDelete(bookId);
-                cachedBookIds.delete(String(bookId));
-            }
-        }
-    }
-
-    // Tier 3: Try strategies in sequence, stopping at first success
-    const strategies = getStrategies(url);
-    let lastError = null;
-
-    for (let i = 0; i < strategies.length; i++) {
-        const s = strategies[i];
-        showStatus(`Fetching PDF... (trying ${s.label})`, true);
-        setLoadBar(20 + Math.floor((i / strategies.length) * 60));
-        try {
-            const result = await s.loader();
-            setLoadBar(90);
-
-            let doc;
-            if (result.type === 'doc') {
-                // Already a parsed pdfDoc from pdfjs streaming
-                doc = result.data;
-            } else {
-                // Got raw bytes — parse with pdfjs
-                doc = await pdfjsLib.getDocument({ ...PDF_OPTIONS, data: result.data }).promise;
-                // Cache bytes in IDB for next time (async, non-blocking)
-                idbPut(bookId, result.data).then(() => {
-                    cachedBookIds.add(String(bookId));
-                    updateLibraryCacheBadge(bookId);
-                });
-            }
-
-            sessionDocCache.set(bookId, doc);
-            setLoadBar(100);
-            hideStatus();
-            return doc;
-
-        } catch (err) {
-            lastError = err;
-            console.warn(`Strategy "${s.label}" failed:`, err.message);
-        }
-    }
-
-    setLoadBar(0);
-    hideStatus();
-    throw new Error(
-        `Could not load the PDF after trying all methods.\n\n` +
-        `Last error: ${lastError?.message || 'unknown'}\n\n` +
-        `Make sure the URL points directly to a .pdf file and is publicly accessible.`
-    );
+async function pdfjsLoad(url) {
+  const doc = await pdfjsLib.getDocument({ ...PDF_OPTS, url }).promise;
+  return { type:'doc', data:doc };
 }
 
-// ─── TARGETED CACHE BADGE UPDATE ─────────────────────────────────────────────
-function updateLibraryCacheBadge(bookId) {
-    const items = document.querySelectorAll('.library-item');
-    items.forEach(item => {
-        const idx = parseInt(item.getAttribute('data-index'));
-        if (!isNaN(idx) && library[idx] && library[idx].id === bookId) {
-            const titleEl = item.querySelector('.library-item-title');
-            if (titleEl && !titleEl.querySelector('.cache-badge')) {
-                const badge = document.createElement('span');
-                badge.className = 'cache-badge';
-                badge.textContent = 'CACHED';
-                titleEl.appendChild(badge);
-            }
-        }
-    });
-}
-
-// ─── PAGE RENDER ──────────────────────────────────────────────────────────────
-async function renderPage(pageNum) {
-    if (!pdfDoc) return;
-
-    if (renderInProgress) {
-        pendingRender = pageNum;
-        return;
+async function loadPdfFast(url, id) {
+  if (sessionCache.has(id)) { idbTouch(id); return sessionCache.get(id); }
+  setLoadBar(10);
+  if (cachedIds.has(String(id))) {
+    showToast('Loading from cache...', true);
+    const cached = await idbGet(id);
+    if (cached?.data) {
+      setLoadBar(60); idbTouch(id);
+      try {
+        const doc = await pdfjsLib.getDocument({ ...PDF_OPTS, data:cached.data }).promise;
+        sessionCache.set(id, doc); setLoadBar(100); hideToast(); return doc;
+      } catch(_) { await idbDelete(id); cachedIds.delete(String(id)); }
     }
-
-    renderInProgress = true;
-    pendingRender = null;
-
-    const viewer = document.getElementById('pdfViewer');
-
+  }
+  const strategies = getStrategies(url);
+  let lastErr = null;
+  for (let i = 0; i < strategies.length; i++) {
+    const s = strategies[i];
+    showToast(`Loading... (${s.label})`, true);
+    setLoadBar(20 + Math.floor(i/strategies.length*60));
     try {
-        const cacheKey = `${currentPdfId}-${pageNum}-${scale}`;
+      const result = await s.load();
+      setLoadBar(90);
+      let doc;
+      if (result.type === 'doc') {
+        doc = result.data;
+      } else {
+        doc = await pdfjsLib.getDocument({ ...PDF_OPTS, data:result.data }).promise;
+        idbPut(id, result.data).then(() => { cachedIds.add(String(id)); refreshCacheBadge(id); });
+      }
+      sessionCache.set(id, doc); setLoadBar(100); hideToast(); return doc;
+    } catch(err) { lastErr = err; console.warn(`[${s.label}]`, err.message); }
+  }
+  setLoadBar(0); hideToast();
+  throw new Error(`Could not load PDF after trying all methods.\n\nLast error: ${lastErr?.message||'unknown'}\n\nMake sure the URL is publicly accessible and points directly to a .pdf file.`);
+}
 
-        if (!renderCache.has(cacheKey)) {
-            const page = await pdfDoc.getPage(pageNum);
-            const viewport = page.getViewport({ scale });
-
-            const skeleton = document.createElement('div');
-            skeleton.className = 'loading-skeleton';
-            skeleton.style.cssText = `width:${viewport.width}px;height:${viewport.height}px`;
-            viewer.innerHTML = '';
-            viewer.appendChild(skeleton);
-
-            const canvas = document.createElement('canvas');
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-            const ctx = canvas.getContext('2d');
-            await page.render({ canvasContext: ctx, viewport }).promise;
-
-            evictRenderCache();
-            renderCache.set(cacheKey, canvas);
-            renderCacheOrder.push(cacheKey);
-        }
-
-        const canvas = renderCache.get(cacheKey);
-        viewer.innerHTML = '';
-        const container = document.createElement('div');
-        container.className = 'pdf-canvas-container';
-        container.appendChild(canvas);
-        viewer.appendChild(container);
-
-        currentPage = pageNum;
-        document.getElementById('pageInput').value = pageNum;
-        updateProgress();
-        schedulePreload(pageNum);
-
-    } catch (e) {
-        console.error('renderPage error:', e);
-        viewer.innerHTML =
-            `<div class="empty-state"><div class="empty-state-icon">!</div><h3>Render Error</h3><p>${e.message}</p></div>`;
-    } finally {
-        renderInProgress = false;
-        if (pendingRender !== null) {
-            const next = pendingRender;
-            pendingRender = null;
-            await renderPage(next);
-        }
+// ── RENDER ─────────────────────────────────────────────────────────────────────
+async function renderPage(n) {
+  if (!pdfDoc) return;
+  if (renderInProgress) { pendingRender = n; return; }
+  renderInProgress = true; pendingRender = null;
+  const viewer = document.getElementById('pdfViewer');
+  try {
+    const key = `${currentPdfId}-${n}-${scale}`;
+    if (!renderCache.has(key)) {
+      const page = await pdfDoc.getPage(n);
+      const vp = page.getViewport({ scale });
+      const skel = document.createElement('div');
+      skel.className = 'skeleton'; skel.style.cssText = `width:${vp.width}px;height:${vp.height}px`;
+      viewer.innerHTML = ''; viewer.appendChild(skel);
+      const canvas = document.createElement('canvas');
+      canvas.width = vp.width; canvas.height = vp.height;
+      await page.render({ canvasContext:canvas.getContext('2d'), viewport:vp }).promise;
+      evictRender(); renderCache.set(key, canvas); renderOrder.push(key);
     }
+    const canvas = renderCache.get(key);
+    viewer.innerHTML = '';
+    const wrap = document.createElement('div'); wrap.className = 'pdf-canvas-wrap';
+    wrap.appendChild(canvas); viewer.appendChild(wrap);
+    currentPage = n;
+    document.getElementById('pageInput').value = n;
+    updateProgress(); schedulePreload(n);
+  } catch(e) {
+    viewer.innerHTML = `<div class="viewer-empty"><div class="viewer-empty-title">Render error</div><div class="viewer-empty-desc">${e.message}</div></div>`;
+  } finally {
+    renderInProgress = false;
+    if (pendingRender !== null) { const next = pendingRender; pendingRender = null; await renderPage(next); }
+  }
 }
 
-function evictRenderCache() {
-    while (renderCache.size >= RENDER_CACHE_MAX) {
-        const oldest = renderCacheOrder.shift();
-        renderCache.delete(oldest);
+function evictRender() {
+  while (renderCache.size >= RENDER_MAX) { const k = renderOrder.shift(); renderCache.delete(k); }
+}
+
+function schedulePreload(p) {
+  if (preloadTimer) clearTimeout(preloadTimer);
+  preloadTimer = setTimeout(() => {
+    const pages = [p+1,p+2,p+3,p-1].filter(x=>x>=1&&x<=totalPages);
+    const run = async () => {
+      await Promise.allSettled(pages.map(async pg => {
+        const k = `${currentPdfId}-${pg}-${scale}`; if (renderCache.has(k)||!pdfDoc) return;
+        const page = await pdfDoc.getPage(pg), vp = page.getViewport({scale});
+        const c = document.createElement('canvas'); c.width=vp.width; c.height=vp.height;
+        await page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise;
+        if (!renderCache.has(k)) { evictRender(); renderCache.set(k,c); renderOrder.push(k); }
+      }));
+    };
+    typeof requestIdleCallback!=='undefined' ? requestIdleCallback(run,{timeout:2000}) : run();
+  }, 200);
+}
+
+function clearBookRenderCache(id) {
+  for (const k of [...renderCache.keys()]) if (k.startsWith(`${id}-`)) { renderCache.delete(k); const i=renderOrder.indexOf(k); if(i!==-1)renderOrder.splice(i,1); }
+}
+
+function refreshCacheBadge(id) {
+  document.querySelectorAll('.lib-item').forEach(el => {
+    const idx = parseInt(el.dataset.index);
+    if (!isNaN(idx) && library[idx]?.id === id) {
+      const t = el.querySelector('.lib-item-title');
+      if (t && !t.querySelector('.cache-badge')) {
+        const b = document.createElement('span'); b.className='cache-badge'; b.textContent='Cached'; t.appendChild(b);
+      }
     }
+  });
 }
 
-// ─── PARALLEL PRELOAD ────────────────────────────────────────────────────────
-function schedulePreload(currentPageNum) {
-    if (preloadTimeout) clearTimeout(preloadTimeout);
-    preloadTimeout = setTimeout(() => {
-        const toPreload = [currentPageNum + 1, currentPageNum + 2, currentPageNum + 3, currentPageNum - 1]
-            .filter(p => p >= 1 && p <= totalPages);
-
-        const run = async () => {
-            await Promise.allSettled(toPreload.map(async p => {
-                const key = `${currentPdfId}-${p}-${scale}`;
-                if (renderCache.has(key) || !pdfDoc) return;
-                const page = await pdfDoc.getPage(p);
-                const viewport = page.getViewport({ scale });
-                const canvas = document.createElement('canvas');
-                canvas.width = viewport.width;
-                canvas.height = viewport.height;
-                await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
-                if (!renderCache.has(key)) {
-                    evictRenderCache();
-                    renderCache.set(key, canvas);
-                    renderCacheOrder.push(key);
-                }
-            }));
-        };
-
-        if (typeof requestIdleCallback !== 'undefined') {
-            requestIdleCallback(run, { timeout: 2000 });
-        } else {
-            run();
-        }
-    }, 150);
-}
-
-// ─── LIBRARY LOADING ──────────────────────────────────────────────────────────
+// ── LOAD FROM LIBRARY ─────────────────────────────────────────────────────────
 async function loadPdfFromLibrary(index) {
-    const item = library[index];
-    currentPdfId = item.id;
-
-    const viewer = document.getElementById('pdfViewer');
-    viewer.innerHTML = `<div class="loading-skeleton" style="width:595px;height:842px;"></div>`;
-
-    try {
-        pdfDoc = await loadPdfFast(item.url, item.id);
-
-        totalPages = pdfDoc.numPages;
-        currentPage = item.currentPage || 1;
-        scale = item.scale || 1.5;
-
-        document.getElementById('totalPages').textContent = totalPages;
-        document.getElementById('pageInput').max = totalPages;
-        updateZoomDisplay();
-
-        await renderPage(currentPage);
-        loadTableOfContents().catch(() => {});
-        renderLibrary();
-
-    } catch (error) {
-        viewer.innerHTML = `<div class="empty-state"><div class="empty-state-icon">!</div><h3>Failed to Load PDF</h3><p style="white-space:pre-wrap;font-size:13px;">${error.message}</p></div>`;
-        setLoadBar(0);
-        console.error(error);
-    }
+  const item = library[index]; if (!item) return;
+  currentPdfId = item.id;
+  document.getElementById('pdfViewer').innerHTML = `<div class="skeleton" style="width:595px;height:842px"></div>`;
+  try {
+    pdfDoc = await loadPdfFast(item.url, item.id);
+    totalPages = pdfDoc.numPages;
+    currentPage = item.currentPage || 1;
+    scale = item.scale || 1.5;
+    document.getElementById('totalPages').textContent = totalPages;
+    document.getElementById('pageInput').max = totalPages;
+    updateZoomLabel();
+    await renderPage(currentPage);
+    loadToc().catch(()=>{});
+    renderLibrary();
+  } catch(err) {
+    document.getElementById('pdfViewer').innerHTML = `<div class="viewer-empty"><div class="viewer-empty-title">Failed to load</div><div class="viewer-empty-desc" style="white-space:pre-wrap">${err.message}</div></div>`;
+    setLoadBar(0); console.error(err);
+  }
 }
 
-// ─── ADD PDF ──────────────────────────────────────────────────────────────────
+// ── ADD PDF ───────────────────────────────────────────────────────────────────
 async function addPdf() {
-    const name = document.getElementById('pdfName').value.trim();
-    const url = document.getElementById('pdfUrl').value.trim();
-    if (!name || !url) { alert('Please enter both name and URL'); return; }
-
-    const addButton = event.target;
-    addButton.textContent = 'Loading...';
-    addButton.disabled = true;
-
-    try {
-        const tempId = Date.now();
-        const pdf = await loadPdfFast(url, tempId);
-
-        const pdfItem = {
-            id: tempId,
-            name,
-            url,
-            currentPage: 1,
-            totalPages: pdf.numPages,
-            scale: 1.5,
-            folders: [activeFolder || 'All'],
-            addedDate: new Date().toISOString()
-        };
-        if (!pdfItem.folders.includes('All')) pdfItem.folders.push('All');
-
-        library.push(pdfItem);
-        localStorage.setItem('pdfLibrary', JSON.stringify(library));
-        renderLibrary();
-        closeAddModal();
-        await loadPdfFromLibrary(library.length - 1);
-    } catch (error) {
-        alert('Failed to load PDF.\n\n' + error.message);
-        console.error(error);
-    } finally {
-        addButton.textContent = 'Add to Library';
-        addButton.disabled = false;
-    }
+  const name = document.getElementById('pdfName').value.trim();
+  const url  = document.getElementById('pdfUrl').value.trim();
+  if (!name||!url) { alert('Please enter both a name and a URL.'); return; }
+  const btn = document.getElementById('addBtn');
+  btn.textContent = 'Loading...'; btn.disabled = true;
+  try {
+    const tempId = Date.now();
+    const pdf = await loadPdfFast(url, tempId);
+    const item = { id:tempId, name, url, currentPage:1, totalPages:pdf.numPages, scale:1.5, folders:[activeFolder||'All'], addedDate:new Date().toISOString() };
+    if (!item.folders.includes('All')) item.folders.push('All');
+    library.push(item); saveLib(); renderLibrary(); closeAddModal();
+    await loadPdfFromLibrary(library.length-1);
+  } catch(err) { alert('Failed to load PDF.\n\n'+err.message); console.error(err); }
+  finally { btn.textContent='Add to Library'; btn.disabled=false; }
 }
 
-// ─── NAVIGATION ───────────────────────────────────────────────────────────────
-async function nextPage() {
-    if (currentPage < totalPages) await renderPage(currentPage + 1);
-}
-
-async function prevPage() {
-    if (currentPage > 1) await renderPage(currentPage - 1);
-}
-
+// ── NAV ───────────────────────────────────────────────────────────────────────
+async function nextPage() { if (currentPage<totalPages) await renderPage(currentPage+1); }
+async function prevPage() { if (currentPage>1) await renderPage(currentPage-1); }
 async function goToPage() {
-    const pageNum = parseInt(document.getElementById('pageInput').value);
-    if (pageNum >= 1 && pageNum <= totalPages) await renderPage(pageNum);
+  const n = parseInt(document.getElementById('pageInput').value);
+  if (n>=1&&n<=totalPages) await renderPage(n);
 }
 
-// ─── ZOOM ─────────────────────────────────────────────────────────────────────
-function clearRenderCacheForCurrentBook() {
-    for (const key of [...renderCache.keys()]) {
-        if (key.startsWith(`${currentPdfId}-`)) {
-            renderCache.delete(key);
-            const i = renderCacheOrder.indexOf(key);
-            if (i !== -1) renderCacheOrder.splice(i, 1);
-        }
-    }
-}
+// ── ZOOM ──────────────────────────────────────────────────────────────────────
+function updateZoomLabel() { document.getElementById('zoomLabel').textContent = Math.round(scale/1.5*100)+'%'; }
 
-async function zoomIn() {
-    scale += 0.25;
-    updateZoomDisplay();
-    clearRenderCacheForCurrentBook();
-    if (pdfDoc) { await renderPage(currentPage); updateProgress(); }
-}
+async function zoomIn() { scale+=0.25; updateZoomLabel(); clearBookRenderCache(currentPdfId); if(pdfDoc){await renderPage(currentPage);updateProgress();} }
+async function zoomOut() { if(scale>0.5){scale-=0.25;updateZoomLabel();clearBookRenderCache(currentPdfId);if(pdfDoc){await renderPage(currentPage);updateProgress();}} }
 
-async function zoomOut() {
-    if (scale > 0.5) {
-        scale -= 0.25;
-        updateZoomDisplay();
-        clearRenderCacheForCurrentBook();
-        if (pdfDoc) { await renderPage(currentPage); updateProgress(); }
-    }
-}
-
-function updateZoomDisplay() {
-    document.getElementById('zoomLevel').textContent = Math.round((scale / 1.5) * 100) + '%';
-}
-
-// ─── PROGRESS ─────────────────────────────────────────────────────────────────
+// ── PROGRESS ──────────────────────────────────────────────────────────────────
 function updateProgress() {
-    if (!currentPdfId) return;
-    const index = library.findIndex(i => i.id === currentPdfId);
-    if (index === -1) return;
-
-    library[index].currentPage = currentPage;
-    library[index].scale = scale;
-    localStorage.setItem('pdfLibrary', JSON.stringify(library));
-
-    const itemEl = document.querySelector(`.library-item[data-index="${index}"]`);
-    if (itemEl) {
-        const progressText = itemEl.querySelector('.library-item-progress');
-        const progressFill = itemEl.querySelector('.progress-fill');
-        if (progressText) progressText.textContent = `Page ${currentPage} of ${totalPages}`;
-        if (progressFill) progressFill.style.width = `${(currentPage / totalPages * 100) || 0}%`;
-    }
+  if (!currentPdfId) return;
+  const idx = library.findIndex(i=>i.id===currentPdfId); if(idx===-1) return;
+  library[idx].currentPage = currentPage; library[idx].scale = scale; saveLib();
+  const el = document.querySelector(`.lib-item[data-index="${idx}"]`);
+  if (el) {
+    const m = el.querySelector('.lib-item-meta'); if(m) m.textContent=`Page ${currentPage} of ${totalPages}`;
+    const f = el.querySelector('.progress-fill'); if(f) f.style.width=`${currentPage/totalPages*100||0}%`;
+  }
 }
 
-// ─── TABLE OF CONTENTS ────────────────────────────────────────────────────────
-async function loadTableOfContents() {
-    const outline = await pdfDoc.getOutline();
-    const tocList = document.getElementById('tocList');
-    if (!outline || !outline.length) {
-        tocList.innerHTML = '<div class="empty-state"><p>No table of contents available</p></div>';
-        return;
-    }
-    function renderOutline(items, level = 0) {
-        return items.map(item => `
-            <div class="toc-item" style="padding-left:${level * 20 + 10}px" onclick="goToTocPage('${item.dest}')">
-                ${item.title}
-            </div>
-            ${item.items ? renderOutline(item.items, level + 1) : ''}
-        `).join('');
-    }
-    tocList.innerHTML = renderOutline(outline);
+// ── TOC ───────────────────────────────────────────────────────────────────────
+async function loadToc() {
+  const outline = await pdfDoc.getOutline();
+  const el = document.getElementById('tocList');
+  if (!outline||!outline.length) { el.innerHTML='<div class="empty-state"><div class="empty-state-title">No table of contents</div><div class="empty-state-desc">This document does not include a built-in table of contents.</div></div>'; return; }
+  function build(items, level=0) {
+    return items.map(item=>`
+      <div class="toc-item" style="padding-left:${level*16+8}px" onclick="navToc(${JSON.stringify(item.dest)})">${item.title}</div>
+      ${item.items?build(item.items,level+1):''}
+    `).join('');
+  }
+  el.innerHTML = build(outline);
 }
 
-async function goToTocPage(dest) {
-    if (!dest) return;
-    try {
-        const destArray = await pdfDoc.getDestination(dest);
-        if (destArray) {
-            const pageIndex = await pdfDoc.getPageIndex(destArray[0]);
-            await renderPage(pageIndex + 1);
-        }
-    } catch (e) { console.error(e); }
+async function navToc(dest) {
+  if (!dest) return;
+  try {
+    const arr = await pdfDoc.getDestination(dest);
+    if (arr) { const pi = await pdfDoc.getPageIndex(arr[0]); await renderPage(pi+1); }
+  } catch(e){console.error(e);}
 }
 
-// ─── FOLDERS ──────────────────────────────────────────────────────────────────
-function saveFolders() {
-    localStorage.setItem('pdfFolders', JSON.stringify(folders));
-    localStorage.setItem('pdfActiveFolder', activeFolder);
+// ── FOLDERS ───────────────────────────────────────────────────────────────────
+function ensureAllFolder() { if (!folders.find(f=>f.name==='All')) folders.unshift({id:'fld_All',name:'All'}); }
+
+function renderFolderUI() {
+  ensureAllFolder();
+  const sel = document.getElementById('folderSelect');
+  sel.innerHTML = folders.map(f=>`<option value="${f.name}" ${f.name===activeFolder?'selected':''}>${f.name}</option>`).join('');
+  const pills = document.getElementById('folderPills');
+  pills.innerHTML = folders.map(f=>`<span class="fpill ${f.name===activeFolder?'active':''}" onclick="switchFolder('${escH(f.name)}')">${escH(f.name)}</span>`).join('');
 }
 
-function renderFolderSelect() {
-    const select = document.getElementById('folderSelect');
-    const palette = document.getElementById('folderPalette');
-    if (!folders.find(f => f.name === 'All')) {
-        folders.unshift({ id: 'fld_All', name: 'All', color: '#e9ecef', icon: '' });
-    }
-    if (select) {
-        select.innerHTML = folders.map(f =>
-            `<option value="${f.name}" ${f.name === activeFolder ? 'selected' : ''}>${f.name}</option>`
-        ).join('');
-    }
-    if (palette) {
-        palette.innerHTML = folders.map(f =>
-            `<div class="folder-pill" data-folder="${f.name}" onclick="changeFolderByPill('${f.name}')">${f.name}</div>`
-        ).join('');
-    }
-}
-
-function changeFolderByPill(folderName) {
-    activeFolder = folderName;
-    document.getElementById('folderSelect').value = folderName;
-    saveFolders();
-    renderLibrary();
-}
-
-function changeFolder() {
-    activeFolder = document.getElementById('folderSelect').value;
-    saveFolders();
-    renderLibrary();
-}
+function switchFolder(name) { activeFolder=name; document.getElementById('folderSelect').value=name; saveFolders(); renderLibrary(); }
+function changeFolder() { activeFolder=document.getElementById('folderSelect').value; saveFolders(); renderLibrary(); }
 
 function addFolder() {
-    const name = prompt('New folder name:');
-    if (!name || !name.trim() || folders.find(f => f.name === name.trim())) return;
-    folders.push({ id: 'fld_' + Date.now(), name: name.trim(), color: '#e9ecef', icon: '' });
-    activeFolder = name.trim();
-    saveFolders();
-    renderFolderSelect();
-    renderLibrary();
+  const n = prompt('New folder name:'); if(!n||!n.trim()||folders.find(f=>f.name===n.trim())) return;
+  folders.push({id:'fld_'+Date.now(),name:n.trim()}); activeFolder=n.trim(); saveFolders(); renderFolderUI(); renderLibrary();
 }
-
 function renameFolder() {
-    if (activeFolder === 'All') { alert('You cannot rename the "All" folder.'); return; }
-    const folder = folders.find(f => f.name === activeFolder);
-    if (!folder) return;
-    const newName = prompt('Rename folder:', folder.name);
-    if (!newName || !newName.trim()) return;
-    const trimmed = newName.trim();
-    folder.name = trimmed;
-    library.forEach(b => {
-        const idx = b.folders.indexOf(activeFolder);
-        if (idx !== -1) b.folders[idx] = trimmed;
-    });
-    activeFolder = trimmed;
-    localStorage.setItem('pdfLibrary', JSON.stringify(library));
-    saveFolders();
-    renderFolderSelect();
-    renderLibrary();
+  if(activeFolder==='All'){alert('The "All" folder cannot be renamed.');return;}
+  const f=folders.find(f=>f.name===activeFolder); if(!f) return;
+  const n=prompt('Rename folder:',f.name); if(!n||!n.trim()) return;
+  const trimmed=n.trim(); f.name=trimmed;
+  library.forEach(b=>{const i=b.folders.indexOf(activeFolder);if(i!==-1)b.folders[i]=trimmed;});
+  activeFolder=trimmed; saveLib(); saveFolders(); renderFolderUI(); renderLibrary();
 }
-
 function deleteFolder() {
-    if (activeFolder === 'All') { alert('You cannot delete the "All" folder.'); return; }
-    if (!confirm(`Delete folder "${activeFolder}"? Books will remain in All.`)) return;
-    folders = folders.filter(f => f.name !== activeFolder);
-    library.forEach(b => {
-        b.folders = b.folders.filter(fn => fn !== activeFolder);
-        if (!b.folders.length) b.folders = ['All'];
-    });
-    activeFolder = 'All';
-    localStorage.setItem('pdfLibrary', JSON.stringify(library));
-    saveFolders();
-    renderFolderSelect();
-    renderLibrary();
+  if(activeFolder==='All'){alert('The "All" folder cannot be deleted.');return;}
+  if(!confirm(`Delete folder "${activeFolder}"? Documents will remain in All.`)) return;
+  folders=folders.filter(f=>f.name!==activeFolder);
+  library.forEach(b=>{b.folders=b.folders.filter(fn=>fn!==activeFolder);if(!b.folders.length)b.folders=['All'];});
+  activeFolder='All'; saveLib(); saveFolders(); renderFolderUI(); renderLibrary();
 }
 
-// ─── LIBRARY RENDER & DRAG ───────────────────────────────────────────────────
-function toggleBookMenu(event, index) {
-    event.stopPropagation();
-    closeAllBookMenus();
-    const item = document.querySelector(`.library-item[data-index="${index}"]`);
-    if (item) item.querySelector('.book-menu-dropdown')?.classList.toggle('open');
-}
-
-function closeAllBookMenus() {
-    document.querySelectorAll('.book-menu-dropdown.open').forEach(m => m.classList.remove('open'));
-}
-
+// ── LIBRARY ───────────────────────────────────────────────────────────────────
 function renderLibrary() {
-    const list = document.getElementById('libraryList');
-    const visibleItems = activeFolder === 'All'
-        ? library
-        : library.filter(item => Array.isArray(item.folders) && item.folders.includes(activeFolder));
-
-    if (!visibleItems.length) {
-        list.innerHTML = '<div class="empty-state"><div class="empty-state-icon"></div><p>No books in this folder</p></div>';
-        renderFolderSelect();
-        return;
-    }
-
-    list.innerHTML = visibleItems.map(item => {
-        const realIndex = library.findIndex(b => b.id === item.id);
-        const isCached = cachedBookIds.has(String(item.id));
-        const canRemove = activeFolder !== 'All' && Array.isArray(item.folders) && item.folders.includes(activeFolder);
-        return `
-            <div class="library-item ${currentPdfId === item.id ? 'active' : ''}" data-index="${realIndex}">
-                <div class="library-item-main" onclick="loadPdfFromLibrary(${realIndex})">
-                    <div class="library-item-title">
-                        ${item.name}
-                        ${isCached ? '<span class="cache-badge">CACHED</span>' : ''}
-                    </div>
-                    <div class="library-item-progress">Page ${item.currentPage || 1} of ${item.totalPages || 1}</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width:${(item.currentPage / item.totalPages * 100 || 0)}%"></div>
-                    </div>
-                </div>
-                <div class="library-item-right">
-                    <button class="book-menu-btn" onclick="toggleBookMenu(event, ${realIndex})">...</button>
-                    <button class="delete-btn" onclick="event.stopPropagation(); deletePdf(${realIndex})">Delete</button>
-                    <div class="book-menu-dropdown">
-                        <div class="book-menu-item" onclick="addBookToFolder(${realIndex})">Add to folder</div>
-                        <div class="book-menu-item ${canRemove ? '' : 'disabled'}"
-                             onclick="${canRemove ? `removeBookFromCurrentFolder(${realIndex})` : 'event.stopPropagation();'}">
-                            Remove from this folder
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-    }).join('');
-
-    renderFolderSelect();
-    attachLibraryDragHandlers();
+  renderFolderUI();
+  const list = document.getElementById('libraryList');
+  const visible = activeFolder==='All' ? library : library.filter(b=>Array.isArray(b.folders)&&b.folders.includes(activeFolder));
+  if (!visible.length) {
+    list.innerHTML='<div class="empty-state"><div class="empty-state-title">No documents here</div><div class="empty-state-desc">Add a PDF or move one to this folder.</div></div>';
+    return;
+  }
+  list.innerHTML = visible.map(item=>{
+    const ri = library.findIndex(b=>b.id===item.id);
+    const cached = cachedIds.has(String(item.id));
+    const canRemove = activeFolder!=='All' && Array.isArray(item.folders) && item.folders.includes(activeFolder);
+    const pct = (item.currentPage/item.totalPages*100)||0;
+    return `
+      <div class="lib-item ${currentPdfId===item.id?'active':''}" data-index="${ri}">
+        <div class="lib-item-spine"></div>
+        <div class="lib-item-body" onclick="loadPdfFromLibrary(${ri})">
+          <div class="lib-item-title">${escH(item.name)}${cached?'<span class="cache-badge">Cached</span>':''}</div>
+          <div class="lib-item-meta">Page ${item.currentPage||1} of ${item.totalPages||1}</div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+        </div>
+        <div class="lib-item-actions">
+          <button class="lib-menu-btn" onclick="toggleLibMenu(event,${ri})">&#8943;</button>
+          <button class="lib-del-btn" onclick="event.stopPropagation();deletePdf(${ri})">Del</button>
+          <div class="lib-dropdown" id="libmenu-${ri}">
+            <div class="lib-dd-item" onclick="addToFolder(${ri})">Add to folder</div>
+            <div class="lib-dd-item ${canRemove?'':'disabled'}" onclick="${canRemove?`removeFromFolder(${ri})`:'event.stopPropagation()'}">Remove from this folder</div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+  attachDragHandlers();
 }
 
-function attachLibraryDragHandlers() {
-    document.querySelectorAll('.library-item').forEach(item => {
-        item.onmousedown = function(e) {
-            if (e.button !== 0 ||
-                e.target.classList.contains('book-menu-btn') ||
-                e.target.classList.contains('delete-btn') ||
-                e.target.closest('.book-menu-dropdown')) return;
+function toggleLibMenu(e,idx) {
+  e.stopPropagation(); closeLibMenus();
+  document.getElementById(`libmenu-${idx}`)?.classList.add('open');
+}
+function closeLibMenus() { document.querySelectorAll('.lib-dropdown.open').forEach(m=>m.classList.remove('open')); }
+document.addEventListener('click', e => { if (!e.target.closest('.lib-item-actions')) closeLibMenus(); });
 
-            isDraggingLibraryItem = true;
-            dragStartIndex = parseInt(this.getAttribute('data-index'));
-            dragCurrentIndex = dragStartIndex;
-            this.classList.add('dragging');
-            const currentItem = this;
-
-            function onMouseMove(ev) {
-                if (!isDraggingLibraryItem) return;
-                const el = document.elementFromPoint(ev.clientX, ev.clientY);
-                if (!el) return;
-                const targetItem = el.closest('.library-item');
-                document.querySelectorAll('.library-item.drag-over').forEach(i => i.classList.remove('drag-over'));
-                if (targetItem && targetItem !== currentItem) {
-                    targetItem.classList.add('drag-over');
-                    dragCurrentIndex = parseInt(targetItem.getAttribute('data-index'));
-                } else {
-                    dragCurrentIndex = dragStartIndex;
-                }
-            }
-
-            function onMouseUp() {
-                document.removeEventListener('mousemove', onMouseMove);
-                document.removeEventListener('mouseup', onMouseUp);
-                if (!isDraggingLibraryItem) return;
-                isDraggingLibraryItem = false;
-                currentItem.classList.remove('dragging');
-                document.querySelectorAll('.library-item.drag-over').forEach(i => i.classList.remove('drag-over'));
-                if (dragCurrentIndex !== null && dragStartIndex !== null && dragCurrentIndex !== dragStartIndex) {
-                    const temp = library[dragStartIndex];
-                    library[dragStartIndex] = library[dragCurrentIndex];
-                    library[dragCurrentIndex] = temp;
-                    localStorage.setItem('pdfLibrary', JSON.stringify(library));
-                    renderLibrary();
-                }
-                dragStartIndex = null;
-                dragCurrentIndex = null;
-            }
-
-            document.addEventListener('mousemove', onMouseMove);
-            document.addEventListener('mouseup', onMouseUp);
-        };
-    });
+function deletePdf(idx) {
+  if (!confirm('Remove this document from your library?')) return;
+  const id = library[idx]?.id;
+  if (id) { sessionCache.delete(id); idbDelete(id); cachedIds.delete(String(id)); clearBookRenderCache(id); }
+  library.splice(idx,1); saveLib(); renderLibrary();
+  if (!library.length) document.getElementById('pdfViewer').innerHTML=`<div class="viewer-empty"><div class="viewer-empty-title">No document open</div><div class="viewer-empty-desc">Add a PDF using the button above.</div></div>`;
 }
 
-function deletePdf(index) {
-    if (confirm('Are you sure you want to delete this PDF from your library?')) {
-        const id = library[index]?.id;
-        if (id) {
-            sessionDocCache.delete(id);
-            idbDelete(id);
-            cachedBookIds.delete(String(id));
-            for (const key of [...renderCache.keys()]) {
-                if (key.startsWith(`${id}-`)) {
-                    renderCache.delete(key);
-                    const i = renderCacheOrder.indexOf(key);
-                    if (i !== -1) renderCacheOrder.splice(i, 1);
-                }
-            }
+function addToFolder(idx) {
+  const b=library[idx]; if(!b) return;
+  const n=prompt(`Add "${b.name}" to folder:\n\nFolders: ${folders.map(f=>f.name).join(', ')}`);
+  if(!n||!n.trim()){closeLibMenus();return;}
+  const t=n.trim(); let f=folders.find(f=>f.name===t);
+  if(!f){f={id:'fld_'+Date.now(),name:t};folders.push(f);saveFolders();renderFolderUI();}
+  if(!Array.isArray(b.folders))b.folders=['All'];
+  if(!b.folders.includes(t))b.folders.push(t);
+  if(!b.folders.includes('All'))b.folders.push('All');
+  saveLib(); renderLibrary(); closeLibMenus(); alert(`"${b.name}" added to "${t}".`);
+}
+
+function removeFromFolder(idx) {
+  if(activeFolder==='All'){closeLibMenus();return;}
+  const b=library[idx]; if(!b||!b.folders?.includes(activeFolder)){closeLibMenus();return;}
+  b.folders=b.folders.filter(fn=>fn!==activeFolder); if(!b.folders.length)b.folders=['All'];
+  saveLib(); renderLibrary(); closeLibMenus();
+}
+
+// ── DRAG ──────────────────────────────────────────────────────────────────────
+function attachDragHandlers() {
+  document.querySelectorAll('.lib-item').forEach(el=>{
+    el.onmousedown = function(e) {
+      if(e.button!==0||e.target.closest('.lib-item-actions')) return;
+      let dragging=false, startIdx=parseInt(this.dataset.index), targetIdx=startIdx;
+      const self=this;
+      const onMove = ev => {
+        dragging=true; self.classList.add('dragging');
+        const target=document.elementFromPoint(ev.clientX,ev.clientY)?.closest('.lib-item');
+        document.querySelectorAll('.lib-item.drag-over').forEach(x=>x.classList.remove('drag-over'));
+        if(target&&target!==self){target.classList.add('drag-over');targetIdx=parseInt(target.dataset.index);}else{targetIdx=startIdx;}
+      };
+      const onUp = () => {
+        document.removeEventListener('mousemove',onMove); document.removeEventListener('mouseup',onUp);
+        self.classList.remove('dragging'); document.querySelectorAll('.lib-item.drag-over').forEach(x=>x.classList.remove('drag-over'));
+        if(dragging&&targetIdx!==startIdx&&targetIdx!==null){
+          const tmp=library[startIdx]; library[startIdx]=library[targetIdx]; library[targetIdx]=tmp; saveLib(); renderLibrary();
         }
-        library.splice(index, 1);
-        localStorage.setItem('pdfLibrary', JSON.stringify(library));
-        renderLibrary();
-        if (!library.length) {
-            document.getElementById('pdfViewer').innerHTML = `
-                <div class="empty-state"><div class="empty-state-icon"></div><h3>No PDF Loaded</h3><p>Click "Add PDF" to load a document from URL</p></div>
-            `;
-        }
-    }
+      };
+      document.addEventListener('mousemove',onMove); document.addEventListener('mouseup',onUp);
+    };
+  });
 }
 
-function addBookToFolder(index) {
-    const book = library[index];
-    if (!book) return;
-    const input = prompt(`Add "${book.name}" to which folder?\n\nExisting folders:\n- ` + folders.map(f => f.name).join('\n- '));
-    if (!input || !input.trim()) { closeAllBookMenus(); return; }
-    const trimmed = input.trim();
-    let folder = folders.find(f => f.name === trimmed);
-    if (!folder) {
-        folder = { id: 'fld_' + Date.now(), name: trimmed, color: '#e9ecef', icon: '' };
-        folders.push(folder);
-        saveFolders();
-        renderFolderSelect();
-    }
-    if (!Array.isArray(book.folders)) book.folders = ['All'];
-    if (!book.folders.includes(trimmed)) book.folders.push(trimmed);
-    if (!book.folders.includes('All')) book.folders.push('All');
-    localStorage.setItem('pdfLibrary', JSON.stringify(library));
-    renderLibrary();
-    closeAllBookMenus();
-    alert(`"${book.name}" added to folder "${trimmed}".`);
+// ── UI ─────────────────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.stab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.sidebar-pane').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  document.getElementById('pane-'+name).classList.add('active');
 }
 
-function removeBookFromCurrentFolder(index) {
-    if (activeFolder === 'All') { closeAllBookMenus(); return; }
-    const book = library[index];
-    if (!book || !book.folders?.includes(activeFolder)) { closeAllBookMenus(); return; }
-    book.folders = book.folders.filter(fn => fn !== activeFolder);
-    if (!book.folders.length) book.folders = ['All'];
-    localStorage.setItem('pdfLibrary', JSON.stringify(library));
-    renderLibrary();
-    closeAllBookMenus();
-    alert(`"${book.name}" removed from folder "${activeFolder}".`);
-}
-
-document.addEventListener('click', e => {
-    if (!e.target.closest('.library-item-right')) closeAllBookMenus();
-});
-
-// ─── MODALS ───────────────────────────────────────────────────────────────────
-function openAddModal() {
-    document.getElementById('addModal').classList.add('active');
-    document.getElementById('pdfName').value = '';
-    document.getElementById('pdfUrl').value = '';
-}
-function closeAddModal() {
-    document.getElementById('addModal').classList.remove('active');
-}
-
-// ─── UI ───────────────────────────────────────────────────────────────────────
-function switchTab(tab) {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
-    if (tab === 'library') {
-        document.querySelectorAll('.tab')[0].classList.add('active');
-        document.getElementById('libraryTab').style.display = 'block';
-    } else {
-        document.querySelectorAll('.tab')[1].classList.add('active');
-        document.getElementById('tocTab').style.display = 'block';
-    }
-}
-
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    sidebar.style.display = sidebar.style.display === 'none' ? 'flex' : 'none';
-}
+function toggleSidebar() { document.getElementById('sidebar').classList.toggle('collapsed'); }
 
 function toggleFullscreen() {
-    const container = document.querySelector('.container');
-    const btn = document.getElementById('fullscreenBtn');
-    if (!document.fullscreenElement) {
-        container.requestFullscreen().then(() => { btn.textContent = 'Exit Fullscreen'; }).catch(err => alert(err.message));
-    } else {
-        document.exitFullscreen().then(() => { btn.textContent = 'Fullscreen'; });
-    }
+  const app=document.querySelector('.app'), btn=document.getElementById('fullscreenBtn');
+  if(!document.fullscreenElement){ app.requestFullscreen().then(()=>btn.textContent='Exit Fullscreen').catch(e=>alert(e.message)); }
+  else { document.exitFullscreen().then(()=>btn.textContent='Fullscreen'); }
 }
+document.addEventListener('fullscreenchange',()=>{ if(!document.fullscreenElement) document.getElementById('fullscreenBtn').textContent='Fullscreen'; });
 
-document.addEventListener('fullscreenchange', () => {
-    if (!document.fullscreenElement) document.getElementById('fullscreenBtn').textContent = 'Fullscreen';
+function openAddModal() {
+  document.getElementById('pdfName').value=''; document.getElementById('pdfUrl').value='';
+  document.getElementById('addModal').classList.add('open');
+  setTimeout(()=>document.getElementById('pdfName').focus(),50);
+}
+function closeAddModal() { document.getElementById('addModal').classList.remove('open'); }
+
+document.addEventListener('keydown', e=>{
+  if(e.target.tagName==='INPUT') return;
+  if(e.key==='ArrowRight'||e.key==='ArrowDown') nextPage();
+  if(e.key==='ArrowLeft'||e.key==='ArrowUp') prevPage();
 });
 
-// ─── KEYBOARD SHORTCUTS ───────────────────────────────────────────────────────
-document.addEventListener('keydown', e => {
-    if (e.target.tagName === 'INPUT') return;
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextPage();
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prevPage();
-});
+// ── DICTIONARY ───────────────────────────────────────────────────────────────
+let dictOpen=false, dictHistory=JSON.parse(localStorage.getItem('dictHistory')||'[]'), dictAudio={};
 
-// ══════════════════════════════════════════════════════════════════════════════
-// DICTIONARY PANEL
-// ══════════════════════════════════════════════════════════════════════════════
-
-let dictPanelOpen = false;
-let dictHistory = JSON.parse(localStorage.getItem('dictHistory') || '[]');
-let dictAudioUrls = {};
-
-function toggleDictPanel() {
-    dictPanelOpen = !dictPanelOpen;
-    const panel = document.getElementById('dictPanel');
-    const btn   = document.getElementById('dictToggleBtn');
-    panel.classList.toggle('open', dictPanelOpen);
-    btn.classList.toggle('dict-active', dictPanelOpen);
-    if (dictPanelOpen) {
-        setTimeout(() => document.getElementById('dictInput').focus(), 320);
-    }
+function toggleDict() {
+  dictOpen=!dictOpen;
+  document.getElementById('dictPanel').classList.toggle('open',dictOpen);
+  document.getElementById('dictToggleBtn').classList.toggle('active',dictOpen);
+  if(dictOpen) setTimeout(()=>document.getElementById('dictInput').focus(),280);
 }
 
 async function lookupWord() {
-    const raw  = document.getElementById('dictInput').value.trim();
-    if (!raw) return;
-    const word = raw.toLowerCase().replace(/[^a-z\-']/g, '');
-    if (!word) return;
-
-    const body = document.getElementById('dictBody');
-    body.innerHTML = `<div class="dict-loading"><div class="dict-spinner"></div><br>Looking up <strong>${escH(raw)}</strong>...</div>`;
-
-    try {
-        const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
-        if (!res.ok) throw new Error('not_found');
-        const data = await res.json();
-        if (!Array.isArray(data) || !data.length) throw new Error('not_found');
-        renderDictResult(data, word);
-        addToHistory(word);
-    } catch (e) {
-        if (e.message === 'not_found') {
-            body.innerHTML = `
-                <div class="dict-error">
-                    No results found for <strong>${escH(raw)}</strong>.<br><br>
-                    Check the spelling, or try the base form of the word (e.g. "run" instead of "running").
-                </div>
-                ${renderHistoryHTML()}`;
-        } else {
-            body.innerHTML = `<div class="dict-error">Network error. Check your connection and try again.</div>${renderHistoryHTML()}`;
-        }
-    }
+  const raw=document.getElementById('dictInput').value.trim(); if(!raw) return;
+  const word=raw.toLowerCase().replace(/[^a-z\-']/g,''); if(!word) return;
+  const body=document.getElementById('dictBody');
+  body.innerHTML=`<div class="dict-loading"><div class="dict-spinner"></div>Looking up <strong>${escH(raw)}</strong>...</div>`;
+  try {
+    const res=await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+    if(!res.ok) throw new Error('not_found');
+    const data=await res.json();
+    if(!Array.isArray(data)||!data.length) throw new Error('not_found');
+    renderDict(data,word); addDictHistory(word);
+  } catch(e) {
+    const msg = e.message==='not_found'
+      ? `No results for <strong>${escH(raw)}</strong>. Check spelling or try the base form (e.g. "run" not "running").`
+      : 'Network error. Check your connection and try again.';
+    body.innerHTML=`<div class="dict-error">${msg}</div>${historyHTML()}`;
+  }
 }
 
-function renderDictResult(entries, word) {
-    const body = document.getElementById('dictBody');
-    dictAudioUrls = {};
-
-    let html = renderHistoryHTML();
-
-    html += `<div class="dict-word-heading">${escH(entries[0].word || word)}</div>`;
-
-    const phonetics = entries.flatMap(e => e.phonetics || []).filter(p => p.text);
-    const uniquePhonetics = [...new Map(phonetics.map(p => [p.text, p])).values()];
-    if (uniquePhonetics.length) {
-        const ph = uniquePhonetics[0];
-        html += `<div class="dict-phonetic">${escH(ph.text)}`;
-        const audioSrc = entries.flatMap(e => e.phonetics || []).find(p => p.audio)?.audio;
-        if (audioSrc) {
-            const audioId = 'aud_' + word;
-            dictAudioUrls[audioId] = audioSrc;
-            html += `<button class="dict-audio-btn" onclick="playDictAudio('${audioId}')">Play</button>`;
-        }
-        html += `</div>`;
-    }
-
-    const allMeanings = entries.flatMap(e => e.meanings || []);
-    const meaningsByPos = {};
-    allMeanings.forEach(m => {
-        const pos = m.partOfSpeech || 'other';
-        if (!meaningsByPos[pos]) meaningsByPos[pos] = [];
-        meaningsByPos[pos].push(...(m.definitions || []));
+function renderDict(entries, word) {
+  dictAudio={};
+  const body=document.getElementById('dictBody');
+  let html=historyHTML();
+  html+=`<div class="dict-word">${escH(entries[0].word||word)}</div>`;
+  const phonetics=entries.flatMap(e=>e.phonetics||[]).filter(p=>p.text);
+  const uniq=[...new Map(phonetics.map(p=>[p.text,p])).values()];
+  if(uniq.length){
+    const ph=uniq[0];
+    html+=`<div class="dict-phonetic">${escH(ph.text)}`;
+    const audioSrc=entries.flatMap(e=>e.phonetics||[]).find(p=>p.audio)?.audio;
+    if(audioSrc){const aid='aud_'+word;dictAudio[aid]=audioSrc;html+=`<button class="dict-audio-btn" onclick="playAudio('${aid}')">Play</button>`;}
+    html+=`</div>`;
+  }
+  const meanings=entries.flatMap(e=>e.meanings||[]);
+  const byPos={};
+  meanings.forEach(m=>{const p=m.partOfSpeech||'other';if(!byPos[p])byPos[p]=[];byPos[p].push(...(m.definitions||[]));});
+  const order=['noun','verb','adjective','adverb','pronoun','preposition','conjunction','interjection','other'];
+  const sorted=[...new Set([...order.filter(p=>byPos[p]),...Object.keys(byPos)])];
+  sorted.forEach(pos=>{
+    const defs=byPos[pos]; if(!defs?.length) return;
+    html+=`<div class="dict-section"><div class="dict-pos">${escH(pos)}</div>`;
+    defs.slice(0,6).forEach((d,i)=>{
+      html+=`<div class="dict-def"><strong>${i+1}.</strong> ${escH(d.definition)}</div>`;
+      if(d.example) html+=`<div class="dict-ex">"${escH(d.example)}"</div>`;
     });
-
-    const posOrder = ['noun','verb','adjective','adverb','pronoun','preposition','conjunction','interjection','other'];
-    const sortedPos = [...new Set([...posOrder.filter(p => meaningsByPos[p]), ...Object.keys(meaningsByPos)])];
-
-    sortedPos.forEach(pos => {
-        const defs = meaningsByPos[pos];
-        if (!defs || !defs.length) return;
-        html += `<div class="dict-section">`;
-        html += `<div class="dict-pos-badge">${escH(pos)}</div>`;
-        defs.slice(0, 6).forEach((def, i) => {
-            html += `<div class="dict-definition"><strong>${i + 1}.</strong> ${escH(def.definition)}</div>`;
-            if (def.example) html += `<div class="dict-example">"${escH(def.example)}"</div>`;
-        });
-        if (defs.length > 6) {
-            html += `<div style="font-size:12px;color:#999;padding-left:12px;margin-bottom:4px;">+${defs.length - 6} more definitions</div>`;
-        }
-        html += `</div>`;
-    });
-
-    const allSynonyms = [...new Set(
-        allMeanings.flatMap(m => [
-            ...(m.synonyms || []),
-            ...(m.definitions || []).flatMap(d => d.synonyms || [])
-        ])
-    )].slice(0, 18);
-
-    if (allSynonyms.length) {
-        html += `<div class="dict-divider"></div><div class="dict-section">`;
-        html += `<div class="dict-meta-label">Synonyms</div>`;
-        html += `<div class="dict-synonyms">${allSynonyms.map(s =>
-            `<span class="dict-syn-pill" onclick="quickLookup('${escH(s)}')">${escH(s)}</span>`
-        ).join('')}</div>`;
-        html += `</div>`;
-    }
-
-    const allAntonyms = [...new Set(
-        allMeanings.flatMap(m => [
-            ...(m.antonyms || []),
-            ...(m.definitions || []).flatMap(d => d.antonyms || [])
-        ])
-    )].slice(0, 10);
-
-    if (allAntonyms.length) {
-        html += `<div class="dict-divider"></div><div class="dict-section">`;
-        html += `<div class="dict-meta-label">Antonyms</div>`;
-        html += `<div class="dict-synonyms">${allAntonyms.map(s =>
-            `<span class="dict-syn-pill" style="background:#fff1f1;color:#c0392b;border-color:#f9c0c0;" onclick="quickLookup('${escH(s)}')">${escH(s)}</span>`
-        ).join('')}</div>`;
-        html += `</div>`;
-    }
-
-    const origins = entries.map(e => e.origin).filter(Boolean);
-    if (origins.length) {
-        html += `<div class="dict-divider"></div><div class="dict-section">`;
-        html += `<div class="dict-meta-label">Etymology / Origin</div>`;
-        html += `<div class="dict-origin">${escH(origins[0])}</div>`;
-        html += `</div>`;
-    }
-
-    const sourceUrls = [...new Set(entries.flatMap(e => e.sourceUrls || []))];
-    if (sourceUrls.length) {
-        html += `<div class="dict-source">Source: <a href="${sourceUrls[0]}" target="_blank">${sourceUrls[0]}</a></div>`;
-    }
-
-    body.innerHTML = html;
+    if(defs.length>6) html+=`<div style="font-size:11px;color:var(--text-faint);padding-left:10px;margin-bottom:4px">+${defs.length-6} more</div>`;
+    html+=`</div>`;
+  });
+  const syns=[...new Set(meanings.flatMap(m=>[...(m.synonyms||[]),...(m.definitions||[]).flatMap(d=>d.synonyms||[])]))].slice(0,18);
+  if(syns.length){ html+=`<div class="dict-hr"></div><div class="dict-section"><div class="dict-meta-label">Synonyms</div><div class="dict-pills">${syns.map(s=>`<span class="dict-pill" onclick="quickLookup('${escH(s)}')">${escH(s)}</span>`).join('')}</div></div>`; }
+  const ants=[...new Set(meanings.flatMap(m=>[...(m.antonyms||[]),...(m.definitions||[]).flatMap(d=>d.antonyms||[])]))].slice(0,10);
+  if(ants.length){ html+=`<div class="dict-hr"></div><div class="dict-section"><div class="dict-meta-label">Antonyms</div><div class="dict-pills">${ants.map(s=>`<span class="dict-pill ant" onclick="quickLookup('${escH(s)}')">${escH(s)}</span>`).join('')}</div></div>`; }
+  const origins=entries.map(e=>e.origin).filter(Boolean);
+  if(origins.length){ html+=`<div class="dict-hr"></div><div class="dict-section"><div class="dict-meta-label">Etymology</div><div class="dict-origin">${escH(origins[0])}</div></div>`; }
+  const srcs=[...new Set(entries.flatMap(e=>e.sourceUrls||[]))];
+  if(srcs.length) html+=`<div class="dict-source">Source: <a href="${srcs[0]}" target="_blank">${srcs[0]}</a></div>`;
+  body.innerHTML=html;
 }
 
-function playDictAudio(audioId) {
-    const url = dictAudioUrls[audioId];
-    if (!url) return;
-    new Audio(url).play().catch(() => {});
+function playAudio(id) { const u=dictAudio[id]; if(u) new Audio(u).play().catch(()=>{}); }
+function quickLookup(w) { document.getElementById('dictInput').value=w; lookupWord(); }
+function addDictHistory(w) { dictHistory=[w,...dictHistory.filter(x=>x!==w)].slice(0,12); localStorage.setItem('dictHistory',JSON.stringify(dictHistory)); }
+function historyHTML() {
+  if(!dictHistory.length) return '';
+  return `<div class="dict-history">${dictHistory.map(w=>`<span class="dict-hist-pill" onclick="quickLookup('${escH(w)}')">${escH(w)}</span>`).join('')}</div>`;
 }
 
-function quickLookup(word) {
-    document.getElementById('dictInput').value = word;
-    lookupWord();
+// ── UTIL ──────────────────────────────────────────────────────────────────────
+function escH(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
-function addToHistory(word) {
-    dictHistory = [word, ...dictHistory.filter(w => w !== word)].slice(0, 12);
-    localStorage.setItem('dictHistory', JSON.stringify(dictHistory));
-}
-
-function renderHistoryHTML() {
-    if (!dictHistory.length) return '';
-    return `<div class="dict-history">${
-        dictHistory.map(w => `<span class="dict-hist-pill" onclick="quickLookup('${escH(w)}')">${escH(w)}</span>`).join('')
-    }</div>`;
-}
-
-function escH(str) {
-    return String(str)
-        .replace(/&/g,'&amp;')
-        .replace(/</g,'&lt;')
-        .replace(/>/g,'&gt;')
-        .replace(/"/g,'&quot;')
-        .replace(/'/g,'&#39;');
-}
-
-// ─── INIT ─────────────────────────────────────────────────────────────────────
-renderFolderSelect();
+// ── INIT ──────────────────────────────────────────────────────────────────────
+renderFolderUI();
 renderLibrary();
-updateZoomDisplay();
+updateZoomLabel();
 </script>
 </body>
 </html>
