@@ -784,12 +784,28 @@ localStorage.setItem('pdfActiveFolder', activeFolder);
 let dragStartIndex = null, dragCurrentIndex = null, isDraggingLibraryItem = false;
 
 // ─── PROXY LIST ───────────────────────────────────────────────────────────────
+// ─── URL NORMALIZER ───────────────────────────────────────────────────────────
+// Some hosts have known-good alternative URL patterns that bypass CORS issues.
+function normalizeUrl(url) {
+    // archive.org: rewrite to the CORS-permissive download endpoint
+    // e.g. https://ia801801.us.archive.org/27/items/foo/bar.pdf
+    //   -> https://archive.org/download/foo/bar.pdf
+    const archiveMatch = url.match(/https?:\/\/ia\d+\.us\.archive\.org\/\d+\/items\/([^/]+)\/(.+)/);
+    if (archiveMatch) {
+        return `https://archive.org/download/${archiveMatch[1]}/${archiveMatch[2]}`;
+    }
+    return url;
+}
+
 function getProxies(url) {
     return [
         url,
         `https://corsproxy.io/?${encodeURIComponent(url)}`,
+        `https://thingproxy.freeboard.io/fetch/${url}`,
         `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
+        `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+        `https://cors.eu.org/${url}`,
+        `https://corsproxy.io/?url=${encodeURIComponent(url)}`
     ];
 }
 
@@ -897,7 +913,8 @@ async function loadPdfFast(url, bookId) {
 
     // Tier 3: Network fetch
     setLoadBar(25);
-    const arrayBuffer = await fetchPdfBytes(url);  // throws on total failure
+    const fetchUrl = normalizeUrl(url);
+    const arrayBuffer = await fetchPdfBytes(fetchUrl);  // throws on total failure
     setLoadBar(75);
 
     const doc = await parsePdfBuffer(arrayBuffer);
