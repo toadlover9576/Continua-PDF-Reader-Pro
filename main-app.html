@@ -620,8 +620,8 @@
             <input type="text" class="form-input" id="pdfUrl" placeholder="https://example.com/document.pdf">
         </div>
         <div class="modal-buttons">
-            <button class="btn btn-secondary" onclick="closeAddModal()">Cancel</button>
-            <button class="btn btn-primary" onclick="addPdf()">Add to Library</button>
+            <button class="btn btn-secondary" style="color:#333;border-color:#ccc;" onclick="closeAddModal()">Cancel</button>
+            <button class="btn btn-primary" style="background:#667eea;color:white;" onclick="addPdf()">Add to Library</button>
         </div>
     </div>
 </div>
@@ -773,26 +773,27 @@ function setLoadBar(pct) {
 }
 
 // ─── FETCH WITH TIMEOUT ───────────────────────────────────────────────────────
-function fetchWithTimeout(url, timeoutMs = 15000) {
+function fetchWithTimeout(url, timeoutMs = 20000) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer));
 }
 
 // ─── PROXY LIST ───────────────────────────────────────────────────────────────
-// Updated 2025 — proxies that are reliably up and support binary/PDF responses.
 function getProxies(url) {
     const enc = encodeURIComponent(url);
     return [
-        // Direct first — works when the server sends CORS headers (e.g. arxiv, gov sites)
+        // Direct — works when the PDF server sends CORS headers (arxiv, gov sites, etc.)
         url,
         // corsproxy.io — most reliable general-purpose proxy
         `https://corsproxy.io/?url=${enc}`,
-        // thingproxy — simple GET proxy, handles binary well
-        `https://thingproxy.freeboard.io/fetch/${url}`,
         // allorigins raw endpoint
         `https://api.allorigins.win/raw?url=${enc}`,
-        // htmldriven cors-anywhere clone — binary-safe
+        // codetabs proxy
+        `https://api.codetabs.com/v1/proxy?quest=${enc}`,
+        // cors-proxy.fringe.zone
+        `https://cors-proxy.fringe.zone/${url}`,
+        // cors.eu.org
         `https://cors.eu.org/${url}`,
     ];
 }
@@ -800,7 +801,7 @@ function getProxies(url) {
 async function fetchPdfBytes(url) {
     const proxies = getProxies(url);
     const racePromises = proxies.map(async proxyUrl => {
-        const res = await fetchWithTimeout(proxyUrl, 15000);
+        const res = await fetchWithTimeout(proxyUrl, 20000);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const buf = await res.arrayBuffer();
         if (buf.byteLength < 100) throw new Error('Empty response');
@@ -860,7 +861,7 @@ async function loadPdfFast(url, bookId) {
             return doc;
         } catch(finalErr) {
             setLoadBar(0);
-            throw new Error('All loading strategies failed. The PDF URL may be unreachable or CORS-blocked. Try a direct PDF link.');
+            throw new Error('All loading strategies failed. The PDF URL may be unreachable. Try a direct PDF link (URL must end in .pdf or serve raw PDF bytes).');
         }
     }
 
