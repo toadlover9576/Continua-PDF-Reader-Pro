@@ -783,6 +783,8 @@ function fetchWithTimeout(url, timeoutMs = 20000) {
 function getProxies(url) {
     const enc = encodeURIComponent(url);
     return [
+        // Server-side proxy (works when hosted on Replit or alongside the API server)
+        `/api/pdf-proxy?url=${enc}`,
         // Direct — works when the PDF server sends CORS headers (arxiv, gov sites, etc.)
         url,
         // corsproxy.io — most reliable general-purpose proxy
