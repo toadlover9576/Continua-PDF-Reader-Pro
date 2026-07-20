@@ -820,6 +820,29 @@ async function fetchPdfBytes(url) {
 const cMapUrl = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/';
 const PDF_OPTIONS = { cMapUrl, cMapPacked: true, disableAutoFetch: false, disableStream: false };
 
+// Background-cache a URL into IndexedDB after streaming load
+async function backgroundCache(url, bookId) {
+    try {
+        const enc = encodeURIComponent(url);
+        // Try proxy first, then direct
+        const sources = [`${PDF_PROXY_BASE}?url=${enc}`, url];
+        let buf = null;
+        for (const src of sources) {
+            try {
+                const r = await fetch(src);
+                if (!r.ok) continue;
+                buf = await r.arrayBuffer();
+                if (buf.byteLength > 100) break;
+            } catch (_) {}
+        }
+        if (buf && buf.byteLength > 100) {
+            await idbPut(bookId, buf);
+            cachedBookIds.add(String(bookId));
+            updateLibraryCacheBadge(bookId);
+        }
+    } catch (_) {}
+}
+
 async function loadPdfFast(url, bookId) {
     if (sessionDocCache.has(bookId)) {
         idbTouch(bookId);
@@ -828,6 +851,7 @@ async function loadPdfFast(url, bookId) {
 
     setLoadBar(15);
 
+    // 1. Try IndexedDB cache first — instant load
     if (cachedBookIds.has(String(bookId))) {
         const cached = await idbGet(bookId);
         if (cached && cached.data) {
@@ -845,30 +869,48 @@ async function loadPdfFast(url, bookId) {
         }
     }
 
-    // Local file — only loadable from cache (re-upload required if cache cleared)
+    // Local file — only loadable from cache
     if (url && url.startsWith('local:')) {
         setLoadBar(0);
         throw new Error('This PDF was loaded from a local file and is no longer cached. Please re-upload the file using "+ Add PDF".');
     }
 
+    // 2. Stream via proxy URL — pdf.js fetches progressively so page 1 appears fast
     setLoadBar(25);
-    let arrayBuffer = null;
-    try {
-        arrayBuffer = await fetchPdfBytes(url);
-    } catch (_) {
+    const enc = encodeURIComponent(url);
+    const proxyUrl = `${PDF_PROXY_BASE}?url=${enc}`;
+
+    let doc;
+    // Try proxy first, then direct URL as fallback
+    const urlsToTry = [proxyUrl, url];
+    for (const streamUrl of urlsToTry) {
+        try {
+            const loadTask = pdfjsLib.getDocument({
+                ...PDF_OPTIONS,
+                url: streamUrl,
+                disableAutoFetch: false,
+                disableStream: false,
+            });
+            loadTask.onProgress = ({ loaded, total }) => {
+                if (total > 0) {
+                    const pct = 25 + Math.round((loaded / total) * 65);
+                    setLoadBar(Math.min(pct, 89));
+                }
+            };
+            doc = await loadTask.promise;
+            break; // success
+        } catch (_) {}
+    }
+    if (!doc) {
         setLoadBar(0);
-        throw new Error('Could not load this PDF. If you\'re using the standalone version, download the PDF and use "Upload from Computer" instead.');
+        throw new Error('Could not load this PDF. The proxy server may be offline — try re-publishing the Replit app, then reload this page.');
     }
 
-    setLoadBar(75);
-    const doc = await pdfjsLib.getDocument({ ...PDF_OPTIONS, data: arrayBuffer }).promise;
     sessionDocCache.set(bookId, doc);
     setLoadBar(100);
 
-    idbPut(bookId, arrayBuffer).then(() => {
-        cachedBookIds.add(String(bookId));
-        updateLibraryCacheBadge(bookId);
-    });
+    // 3. Cache full bytes in background so next open is instant
+    backgroundCache(url, bookId);
 
     return doc;
 }
