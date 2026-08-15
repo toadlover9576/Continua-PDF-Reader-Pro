@@ -585,7 +585,7 @@
                     type="text"
                     class="dict-input"
                     id="dictInput"
-                    placeholder="Type a word..."
+                    placeholder="Type a word or phrase..."
                     onkeydown="if(event.key==='Enter') lookupWord()"
                     autocomplete="off"
                     autocorrect="off"
@@ -597,7 +597,7 @@
                 <div class="dict-empty">
                     <div class="dict-empty-icon">A</div>
                     <p style="font-size:13px;color:#aaa;line-height:1.6;">
-                        Enter any word to get its full definition, pronunciation, part of speech, etymology, synonyms, antonyms, and example sentences.
+                        Search words, hyphenated terms, idioms, medical terms, and multi-word phrases. Results are cached on this device for fast repeat lookups.
                     </p>
                 </div>
             </div>
@@ -1544,6 +1544,164 @@ document.addEventListener('keydown', e => {
 let dictPanelOpen = false;
 let dictHistory = JSON.parse(localStorage.getItem('dictHistory') || '[]');
 let dictAudioUrls = {};
+let dictLookupSerial = 0;
+const DICT_CACHE_KEY = 'dictResultCacheV2';
+const DICT_CACHE_TTL = 1000 * 60 * 60 * 24 * 30;
+
+function normalizeDictQuery(value) {
+    return String(value || '')
+        .normalize('NFKC')
+        .replace(/[–—−]/g, '-')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase()
+        .replace(/[^\p{L}\p{M}\p{N}\s'’-]/gu, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function readDictCache() {
+    try {
+        const cache = JSON.parse(localStorage.getItem(DICT_CACHE_KEY) || '{}');
+        return cache && typeof cache === 'object' ? cache : {};
+    } catch (_) {
+        return {};
+    }
+}
+
+function writeDictCache(key, value) {
+    try {
+        const cache = readDictCache();
+        cache[key] = { savedAt: Date.now(), value };
+        const keys = Object.keys(cache);
+        if (keys.length > 100) {
+            keys.sort((a, b) => (cache[a].savedAt || 0) - (cache[b].savedAt || 0));
+            keys.slice(0, keys.length - 100).forEach(k => delete cache[k]);
+        }
+        localStorage.setItem(DICT_CACHE_KEY, JSON.stringify(cache));
+    } catch (_) {}
+}
+
+async function fetchDictJson(url, timeoutMs = 9000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const res = await fetch(url, {
+            signal: controller.signal,
+            headers: { 'Accept': 'application/json' }
+        });
+        if (!res.ok) return null;
+        return await res.json();
+    } finally {
+        clearTimeout(timer);
+    }
+}
+
+async function fetchFreeDictionary(term) {
+    try {
+        const data = await fetchDictJson(
+            `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(term)}`
+        );
+        return Array.isArray(data) && data.length ? data : null;
+    } catch (_) {
+        return null;
+    }
+}
+
+async function fetchWikipediaSummary(term) {
+    try {
+        const title = encodeURIComponent(term.replace(/\s+/g, '_'));
+        const data = await fetchDictJson(
+            `https://en.wikipedia.org/api/rest_v1/page/summary/${title}`
+        );
+        if (!data || data.type === 'https://mediawiki.org/wiki/HyperSwitch/errors/not_found') return null;
+        if (!data.extract && !data.description) return null;
+        return data;
+    } catch (_) {
+        return null;
+    }
+}
+
+async function fetchWiktionaryEntry(term) {
+    try {
+        const title = encodeURIComponent(term.replace(/\s+/g, '_'));
+        const data = await fetchDictJson(
+            `https://en.wiktionary.org/w/api.php?action=query&prop=extracts&explaintext=1&redirects=1&format=json&origin=*&titles=${title}`
+        );
+        const pages = data?.query?.pages ? Object.values(data.query.pages) : [];
+        const page = pages[0];
+        if (!page || page.missing !== undefined || !page.extract) return null;
+        return page;
+    } catch (_) {
+        return null;
+    }
+}
+
+async function fetchWordSuggestions(term) {
+    try {
+        const data = await fetchDictJson(
+            `https://api.datamuse.com/words?sp=${encodeURIComponent(term)}&md=d,p&max=10`
+        );
+        return Array.isArray(data) ? data : [];
+    } catch (_) {
+        return [];
+    }
+}
+
+async function getDictResult(term) {
+    const cache = readDictCache();
+    const cached = cache[term];
+    if (cached && Date.now() - cached.savedAt < DICT_CACHE_TTL) return cached.value;
+
+    // Query the exact dictionary and phrase reference in parallel so a slow
+    // fallback never delays an ordinary word lookup.
+    const [entries, wiki] = await Promise.all([
+        fetchFreeDictionary(term),
+        (term.includes(' ') || term.includes('-')) ? fetchWikipediaSummary(term) : Promise.resolve(null)
+    ]);
+    if (entries) {
+        const result = { kind: 'entries', term, entries };
+        writeDictCache(term, result);
+        return result;
+    }
+
+    // Wikipedia is especially useful for medical, scientific, historical,
+    // geographic, and proper-noun terms that are absent from a word dictionary.
+    if (wiki) {
+        const result = { kind: 'wikipedia', term, wiki };
+        writeDictCache(term, result);
+        return result;
+    }
+
+    // Wiktionary contains rare words, dialect, slang, inflections, and idioms.
+    const wiktionary = await fetchWiktionaryEntry(term);
+    if (wiktionary) {
+        const result = { kind: 'wiktionary', term, wiktionary };
+        writeDictCache(term, result);
+        return result;
+    }
+
+    // For a phrase with no exact entry, show useful definitions for each
+    // component instead of incorrectly collapsing the phrase into one word.
+    const parts = [...new Set(term.split(/\s+/).filter(Boolean))];
+    if (parts.length > 1) {
+        const partEntries = await Promise.all(parts.map(async part => ({
+            word: part,
+            entries: await fetchFreeDictionary(part)
+        })));
+        const usableParts = partEntries.filter(item => item.entries);
+        if (usableParts.length) {
+            const result = { kind: 'components', term, parts: usableParts };
+            writeDictCache(term, result);
+            return result;
+        }
+    }
+
+    const suggestions = await fetchWordSuggestions(term);
+    const result = { kind: 'suggestions', term, suggestions };
+    writeDictCache(term, result);
+    return result;
+}
 
 function toggleDictPanel() {
     dictPanelOpen = !dictPanelOpen;
@@ -1559,31 +1717,108 @@ function toggleDictPanel() {
 async function lookupWord() {
     const raw  = document.getElementById('dictInput').value.trim();
     if (!raw) return;
-    const word = raw.toLowerCase().replace(/[^a-z\-']/g, '');
+    const word = normalizeDictQuery(raw);
     if (!word) return;
+    const lookupSerial = ++dictLookupSerial;
 
     const body = document.getElementById('dictBody');
     body.innerHTML = `<div class="dict-loading"><div class="dict-spinner"></div><br>Looking up <strong>${escH(raw)}</strong>...</div>`;
 
     try {
-        const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
-        if (!res.ok) throw new Error('not_found');
-        const data = await res.json();
-        if (!Array.isArray(data) || !data.length) throw new Error('not_found');
-        renderDictResult(data, word);
+        const result = await getDictResult(word);
+        if (lookupSerial !== dictLookupSerial) return;
+        if (result.kind === 'entries') renderDictResult(result.entries, word);
+        else if (result.kind === 'wikipedia') renderWikipediaResult(result.wiki, word);
+        else if (result.kind === 'wiktionary') renderWiktionaryResult(result.wiktionary, word);
+        else if (result.kind === 'components') renderComponentResult(result.parts, word);
+        else renderSuggestionResult(result.suggestions, word);
         addToHistory(word);
     } catch (e) {
-        if (e.message === 'not_found') {
-            body.innerHTML = `
-                <div class="dict-error">
-                    No results found for <strong>${escH(raw)}</strong>.<br><br>
-                    Check the spelling, or try the base form of the word (e.g. "run" instead of "running").
-                </div>
-                ${renderHistoryHTML()}`;
-        } else {
-            body.innerHTML = `<div class="dict-error">Network error. Check your connection and try again.</div>${renderHistoryHTML()}`;
-        }
+        if (lookupSerial !== dictLookupSerial) return;
+        body.innerHTML = `<div class="dict-error">Dictionary services are temporarily unavailable. Check your connection and try again.</div>${renderHistoryHTML()}`;
     }
+}
+
+function renderWikipediaResult(wiki, term) {
+    const body = document.getElementById('dictBody');
+    const title = wiki.title || term;
+    const extract = wiki.extract || wiki.description || '';
+    let html = renderHistoryHTML();
+    html += `<div class="dict-word-heading">${escH(title)}</div>`;
+    if (wiki.description) html += `<div class="dict-phonetic">${escH(wiki.description)}</div>`;
+    if (extract) {
+        html += `<div class="dict-section"><div class="dict-pos-badge">reference entry</div>`;
+        html += `<div class="dict-definition">${escH(extract)}</div></div>`;
+    }
+    if (wiki.content_urls?.desktop?.page) {
+        html += `<div class="dict-source">Source: <a href="${wiki.content_urls.desktop.page}" target="_blank" rel="noopener">Wikipedia</a></div>`;
+    }
+    body.innerHTML = html;
+}
+
+function cleanWiktionaryText(text) {
+    return String(text || '')
+        .replace(/^={2,}.*={2,}$/gm, '')
+        .replace(/\[\[([^|\]]+)\|([^\]]+)\]\]/g, '$2')
+        .replace(/\[\[([^\]]+)\]\]/g, '$1')
+        .replace(/'''?|<[^>]+>/g, '')
+        .replace(/^\s*[*#;:]+\s*/gm, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+}
+
+function renderWiktionaryResult(page, term) {
+    const body = document.getElementById('dictBody');
+    const text = cleanWiktionaryText(page.extract);
+    let html = renderHistoryHTML();
+    html += `<div class="dict-word-heading">${escH(page.title || term)}</div>`;
+    html += `<div class="dict-phonetic">Wiktionary entry</div>`;
+    const chunks = text.split(/\n{2,}/).map(s => s.trim()).filter(Boolean).slice(0, 12);
+    if (chunks.length) {
+        html += `<div class="dict-section">`;
+        chunks.forEach((chunk, i) => {
+            html += `<div class="dict-definition">${i + 1}. ${escH(chunk)}</div>`;
+        });
+        html += `</div>`;
+    }
+    html += `<div class="dict-source">Source: <a href="https://en.wiktionary.org/wiki/${encodeURIComponent((page.title || term).replace(/\s+/g, '_'))}" target="_blank" rel="noopener">Wiktionary</a></div>`;
+    body.innerHTML = html;
+}
+
+function renderComponentResult(parts, phrase) {
+    const body = document.getElementById('dictBody');
+    let html = renderHistoryHTML();
+    html += `<div class="dict-word-heading">${escH(phrase)}</div>`;
+    html += `<div class="dict-phonetic">Phrase components</div>`;
+    html += `<div class="dict-section"><div class="dict-definition">No exact entry was found for this phrase, so the definitions of its words are shown below.</div></div>`;
+    parts.forEach(part => {
+        html += `<div class="dict-section"><div class="dict-pos-badge">${escH(part.word)}</div>`;
+        const meanings = part.entries.flatMap(entry => entry.meanings || []);
+        meanings.slice(0, 4).forEach(meaning => {
+            (meaning.definitions || []).slice(0, 4).forEach((def, i) => {
+                html += `<div class="dict-definition"><strong>${escH(meaning.partOfSpeech || 'definition')} ${i + 1}.</strong> ${escH(def.definition)}</div>`;
+                if (def.example) html += `<div class="dict-example">"${escH(def.example)}"</div>`;
+            });
+        });
+        html += `</div>`;
+    });
+    body.innerHTML = html;
+}
+
+function renderSuggestionResult(suggestions, term) {
+    const body = document.getElementById('dictBody');
+    let html = renderHistoryHTML();
+    html += `<div class="dict-error">No exact definition found for <strong>${escH(term)}</strong>.</div>`;
+    if (suggestions.length) {
+        html += `<div class="dict-section"><div class="dict-meta-label">Possible matches</div><div class="dict-synonyms">`;
+        suggestions.slice(0, 10).forEach(item => {
+            const suggestion = item.word || '';
+            if (!suggestion) return;
+            html += `<span class="dict-syn-pill" onclick="quickLookup('${escH(suggestion)}')">${escH(suggestion)}</span>`;
+        });
+        html += `</div></div>`;
+    }
+    body.innerHTML = html;
 }
 
 function renderDictResult(entries, word) {
